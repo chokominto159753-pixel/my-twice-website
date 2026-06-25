@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>文学ノート - Sentence Library</title>
+  
+  <!-- Firebase SDK (Compat Version) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* --- CSS Variables & Design System --- */
+    :root {
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      --transition-base: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      --transition-slow: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+      
+      /* 指定カラーパレット */
+      --bg-app: #f7fbff;
+      --bg-card: #ffffff;
+      --bg-section: #eef6ff;
+      --color-primary: #7ec8ff;
+      --color-primary-dark: #4fb3ff;
+      --color-primary-light: #d9f0ff;
+      
+      --color-text: #2b2f36;
+      --color-muted: #6b7a8c;
+      --color-helper: #a9b7c6;
+      --border-card: #e3eef7;
+      --shadow-sm: 0 6px 16px rgba(120, 160, 200, 0.08);
+      --shadow-md: 0 10px 24px rgba(120, 160, 200, 0.15);
+      
+      --tag-bg: #eaf6ff;
+      --tag-text: #4fb3ff;
+      --tag-border: #cfe9ff;
+      
+      --fav-empty: #cbd6e2;
+      --fav-filled: #4fb3ff;
+      
+      /* フォント設定 */
+      --text-sentence-small: 0.95rem;
+      --text-sentence-medium: 1.1rem;
+      --text-sentence-large: 1.3rem;
+    }
+
+    /* Base Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-app);
+      color: var(--color-text);
+      line-height: 1.8;
+      transition: background-color 0.3s ease, color 0.3s ease;
+      padding-bottom: calc(100px + env(safe-area-inset-bottom));
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 20px 16px;
+    }
+
+    /* Header & Navigation (スマホ対応 上部タブ) */
+    .app-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-top: 12px;
+      gap: 16px;
+    }
+
+    .app-title {
+      font-size: 1.7rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      color: var(--color-text);
+      border-bottom: 2px solid var(--color-primary-light);
+      padding-bottom: 4px;
+    }
+
+    /* タブナビゲーション */
+    .top-nav {
+      display: flex;
+      background: var(--bg-section);
+      padding: 6px;
+      border-radius: 30px;
+      width: 100%;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-item {
+      background: none;
+      border: none;
+      color: var(--color-muted);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      gap: 4px;
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 24px;
+      transition: var(--transition-base);
+    }
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+    .nav-item.active {
+      background: var(--bg-card);
+      color: var(--color-primary-dark);
+      box-shadow: 0 4px 10px rgba(120, 160, 200, 0.1);
+    }
+
+    /* UI Panels (余白重視・空気感) */
+    .glass-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-base);
+      position: relative;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Form Elements */
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      background: var(--bg-app);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      padding: 16px;
+      color: var(--color-text);
+      font-family: inherit;
+      font-size: 1rem;
+      resize: vertical;
+      transition: var(--transition-base);
+      outline: none;
+      line-height: 1.7;
+    }
+    textarea:focus {
+      border-color: var(--color-primary);
+      background: var(--bg-card);
+      box-shadow: 0 0 0 4px rgba(126, 200, 255, 0.15);
+    }
+
+    .input-text-field {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-app);
+      color: var(--color-text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: var(--transition-base);
+    }
+    .input-text-field:focus {
+      border-color: var(--color-primary);
+      background: var(--bg-card);
+    }
+
+    /* Autocomplete Box (入力候補UI) */
+    .autocomplete-container {
+      position: relative;
+      width: 100%;
+    }
+    .autocomplete-box {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 12px;
+      box-shadow: var(--shadow-md);
+      z-index: 99;
+      margin-top: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      display: none;
+    }
+    .autocomplete-item {
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: var(--transition-base);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .autocomplete-item:hover {
+      background-color: #f0f8ff;
+      color: var(--color-primary-dark);
+    }
+
+    /* Controls Grid */
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: var(--color-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--color-primary-dark);
+    }
+
+    .select-wrapper select {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-card);
+      color: var(--color-text);
+      font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* ボタン */
+    .btn-primary {
+      width: 100%;
+      background: var(--color-primary-dark);
+      color: #FFFFFF;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 6px 16px rgba(79, 179, 255, 0.25);
+      transition: var(--transition-base);
+    }
+    .btn-primary:hover {
+      background: var(--color-primary);
+      transform: translateY(-1px);
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+    .btn-primary:disabled {
+      background: var(--color-helper);
+      box-shadow: none;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .btn-sub {
+      background: var(--color-primary-light);
+      color: var(--color-primary-dark);
+      border: 1px solid var(--tag-border);
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: var(--transition-base);
+    }
+    .btn-sub:hover {
+      background: var(--color-primary-dark);
+      color: #fff;
+    }
+
+    /* カテゴリ選択・入力補助エリア */
+    .category-selection-area {
+      border-top: 1px dashed var(--border-card);
+      margin-top: 16px;
+      padding-top: 16px;
+    }
+    .category-chips-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .category-chip-interactive {
+      font-size: 0.8rem;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--bg-app);
+      color: var(--color-muted);
+      border: 1px solid var(--border-card);
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition-base);
+    }
+    .category-chip-interactive.selected {
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      border-color: var(--tag-border);
+      font-weight: 600;
+    }
+
+    .category-creator-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Search & Filter Bar */
+    .filter-section {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-card);
+      color: var(--color-text);
+      font-size: 0.9rem;
+      outline: none;
+      transition: var(--transition-base);
+    }
+    .search-input:focus {
+      border-color: var(--color-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-card);
+      background: var(--bg-card);
+      color: var(--color-text);
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* 文カード一覧 */
+    .sentences-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sentence-card {
+      position: relative;
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      padding: 20px 24px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-base);
+    }
+    .sentence-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .sentence-text {
+      line-height: 1.8;
+      margin-bottom: 16px;
+      padding-right: 32px;
+      word-break: break-all;
+      color: var(--color-text);
+    }
+    .size-small { font-size: var(--text-sentence-small); }
+    .size-medium { font-size: var(--text-sentence-medium); }
+    .size-large { font-size: var(--text-sentence-large); }
+
+    /* 出現頻度バッジ */
+    .count-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-primary-dark);
+      background: var(--color-primary-light);
+      border: 1px solid var(--tag-border);
+      padding: 2px 10px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+
+    /* お気に入りボタン (やさしい星デザイン) */
+    .fav-toggle-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--fav-empty);
+      transition: var(--transition-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .fav-toggle-btn:hover {
+      transform: scale(1.15);
+    }
+    .fav-toggle-btn.active {
+      color: var(--fav-filled);
+    }
+    .fav-toggle-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    /* カテゴリタグ */
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .category-tag {
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: var(--tag-bg);
+      color: var(--tag-text);
+      border: 1px solid var(--tag-border);
+      user-select: none;
+    }
+
+    .card-footer-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border-card);
+      padding-top: 12px;
+    }
+
+    .card-date {
+      font-size: 0.75rem;
+      color: var(--color-muted);
+    }
+
+    .edit-tag-btn {
+      background: none;
+      border: none;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-primary-dark);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* インライン編集パネル */
+    .inline-edit-panel {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border-card);
+      display: none;
+    }
+    .inline-edit-panel.active {
+      display: block;
+    }
+
+    .edit-dropdown-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 480px) {
+      .edit-dropdown-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .checkbox-chip {
+      display: block;
+      position: relative;
+    }
+    .checkbox-chip input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+    .checkbox-chip span {
+      display: block;
+      padding: 8px 6px;
+      border-radius: 8px;
+      background: var(--bg-app);
+      color: var(--color-muted);
+      font-size: 0.75rem;
+      text-align: center;
+      border: 1px solid var(--border-card);
+      cursor: pointer;
+      user-select: none;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: var(--transition-base);
+    }
+    .checkbox-chip input:checked ~ span {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary);
+      color: var(--color-primary-dark);
+      font-weight: 600;
+    }
+
+    .inline-add-cat-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .inline-add-cat-row input {
+      flex: 1;
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-card);
+      outline: none;
+    }
+
+    /* Views Switching */
+    .app-view {
+      display: none;
+    }
+    .app-view.active {
+      display: block;
+    }
+
+    /* カテゴリ一覧表示ページ用UI */
+    .category-summary-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .category-summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      padding: 16px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: var(--transition-base);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .category-summary-card:hover {
+      border-color: var(--color-primary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .category-summary-card.active {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary);
+    }
+    .category-summary-name {
+      font-weight: 600;
+      color: var(--color-text);
+      font-size: 0.95rem;
+    }
+    .category-summary-count {
+      background: var(--bg-card);
+      color: var(--color-primary-dark);
+      border: 1px solid var(--tag-border);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* 設定用のトグルスイッチUI (ゆっくりアニメーション仕様) */
+    .toggle-switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+    }
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #d6e2ee;
+      border-radius: 28px;
+      transition: var(--transition-slow);
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      transition: var(--transition-slow);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    input:checked + .toggle-slider {
+      background-color: #7ec8ff;
+    }
+    input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    /* Modals / Overlays */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(43, 47, 54, 0.4);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(4px);
+    }
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-card);
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      transform: translateY(10px);
+      transition: var(--transition-base);
+    }
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .modal-description {
+      font-size: 0.9rem;
+      color: var(--color-muted);
+      margin-bottom: 20px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    .btn-secondary {
+      background: none;
+      border: 1px solid var(--border-card);
+      color: var(--color-text);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .btn-danger {
+      background: #ff7e7e;
+      color: #FFFFFF;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(43, 47, 54, 0.9);
+      color: #FFFFFF;
+      padding: 12px 24px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: var(--shadow-md);
+      z-index: 2000;
+      display: none;
+      text-align: center;
+      max-width: 90%;
+    }
+    
+    .empty-placeholder {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--color-muted);
+    }
+    .empty-placeholder svg {
+      width: 44px;
+      height: 44px;
+      stroke: var(--color-muted);
+      margin-bottom: 16px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- HEADER -->
+    <header class="app-header">
+      <h1 class="app-title">文学ノート</h1>
+      
+      <!-- TOP NAVIGATION (上部タブ・スマホ対応) -->
+      <nav class="top-nav">
+        <button class="nav-item active" data-target="view-home">
+          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>ノート</span>
+        </button>
+        <button class="nav-item" data-target="view-categories">
+          <svg viewBox="0 0 24 24" stroke="currentColor" fill="none"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>カテゴリ</span>
+        </button>
+        <button class="nav-item" data-target="view-favorites">
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          <span>お気に入り</span>
+        </button>
+        <button class="nav-item" data-target="view-settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>設定</span>
+        </button>
+      </nav>
+    </header>
+
+    <!-- ================= HOME VIEW ================= -->
+    <main class="app-view active" id="view-home">
+      
+      <!-- Input Section -->
+      <section class="glass-panel">
+        <h2 class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+          一文を書き留める
+        </h2>
+        
+        <!-- 入力候補機能コンテナ -->
+        <div class="autocomplete-container">
+          <textarea id="text-input" placeholder="心に残った文章を入力してください" disabled></textarea>
+        </div>
+        
+        <!-- カテゴリ自由追加＆選択UI -->
+        <div class="category-selection-area">
+          <p style="font-size: 0.8rem; color: var(--color-muted); margin-bottom: 8px;">カテゴリを選択または追加（複数選択可）</p>
+          <div class="category-chips-list" id="register-category-chips">
+            <!-- 動的ロード -->
+          </div>
+          <div class="category-creator-row">
+            <input type="text" id="new-category-tag-input" class="input-text-field" style="padding: 8px 12px; font-size: 0.85rem;" placeholder="新しいカテゴリ名を入力して追加...">
+            <button type="button" class="btn-sub" id="add-category-tag-btn" style="padding: 8px 16px;">追加</button>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="split-comma-chk">
+            <span>「、」でも区切る</span>
+          </label>
+          
+          <label class="checkbox-label">
+            <input type="checkbox" id="dedup-chk" checked>
+            <span>重複文を除外する</span>
+          </label>
+          
+          <div class="select-wrapper">
+            <select id="size-selector-home" aria-label="文字サイズ">
+              <option value="size-small">小</option>
+              <option value="size-medium" selected>中</option>
+              <option value="size-large">大</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="btn-primary" id="split-btn" style="margin-top: 18px;" disabled>
+          文章ノートに登録する
+        </button>
+      </section>
+
+      <!-- ① 青空文庫読み込みセクション -->
+      <section class="glass-panel">
+        <h2 class="panel-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          青空文庫から読み込む
+        </h2>
+        <p class="modal-description" style="margin-bottom: 12px; font-size: 0.8rem;">図書カードのHTML、またはテキストファイルのURLを入力して、自動で一文ごとに分割・登録します。</p>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <input type="url" id="aozora-url-input" class="input-text-field" placeholder="https://www.aozora.gr.jp/cards/..." disabled>
+          <button class="btn-primary" id="aozora-load-btn" style="box-shadow: none;" disabled>読み込みを開始する</button>
+        </div>
+      </section>
+
+      <!-- Search & Filters -->
+      <section class="filter-section">
+        <div class="search-input-wrapper">
+          <input type="search" class="search-input" id="search-home" placeholder="文章を検索...">
+        </div>
+        <div>
+          <select class="filter-select" id="cat-filter-home" aria-label="カテゴリー検索">
+            <!-- Dynamically Loaded -->
+          </select>
+        </div>
+      </section>
+
+      <!-- Sentences List -->
+      <section id="list-home" class="sentences-list">
+        <!-- Card items injection -->
+      </section>
+
+    </main>
+
+    <!-- ================= ② CATEGORIES VIEW (カテゴリ一覧ページ) ================= -->
+    <main class="app-view" id="view-categories">
+      <section class="glass-panel">
+        <h2 class="panel-title">カテゴリ一覧</h2>
+        <p class="modal-description" style="margin-bottom: 16px;">登録済みのカテゴリと言葉の数です。タップして文章を絞り込みます。</p>
+        <div class="category-summary-box" id="category-summary-container">
+          <!-- Dynamically Loaded -->
+        </div>
+      </section>
+
+      <section class="filter-section">
+        <div class="search-input-wrapper" style="grid-column: span 2;">
+          <input type="search" class="search-input" id="search-cat-view" placeholder="選択中のカテゴリ内から検索...">
+        </div>
+      </section>
+
+      <section id="list-category-view" class="sentences-list">
+        <!-- Filtered results -->
+      </section>
+    </main>
+
+    <!-- ================= ③ FAVORITES VIEW ================= -->
+    <main class="app-view" id="view-favorites">
+      <!-- Search & Filters -->
+      <section class="filter-section">
+        <div class="search-input-wrapper" style="grid-column: span 2;">
+          <input type="search" class="search-input" id="search-fav" placeholder="お気に入りを検索...">
+        </div>
+      </section>
+
+      <!-- Favorites Sentences List -->
+      <section id="list-favorites" class="sentences-list">
+        <!-- Card items injection -->
+      </section>
+    </main>
+
+    <!-- ================= ④ SETTINGS VIEW ================= -->
+    <main class="app-view" id="view-settings">
+      
+      <!-- Font Size / App Setting -->
+      <section class="glass-panel">
+        <h2 class="settings-group-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 16px;">表示設定</h2>
+        <div class="controls-row" style="margin-top: 0; flex-direction: column; align-items: flex-start; gap: 16px;">
+          <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+            <span>フォントサイズ</span>
+            <div class="select-wrapper">
+              <select id="size-selector-setting">
+                <option value="size-small">小</option>
+                <option value="size-medium" selected>中</option>
+                <option value="size-large">大</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+            <span>重複文を除外する</span>
+            <label class="checkbox-label">
+              <input type="checkbox" id="dedup-chk-setting" checked>
+              <span>有効</span>
+            </label>
+          </div>
+
+          <!-- ④ 入力補助候補ON/OFF -->
+          <div class="toggle-switch-row">
+            <div>
+              <p style="font-weight: 500;">入力補助機能</p>
+              <p style="font-size: 0.8rem; color: var(--color-muted);">タイピング時、過去の登録文から一致する候補を提示します</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autocomplete-toggle-chk" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Learning Dictionary Management -->
+      <section class="glass-panel">
+        <h2 class="settings-group-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">自動解析・辞書管理</h2>
+        <p class="modal-description" style="margin-bottom: 16px;">文脈からカテゴリを自動推論するためのキーワードを設定します。</p>
+        
+        <div class="select-wrapper" style="margin-bottom: 12px; width: 100%;">
+          <select id="dict-cat-selector" style="width:100%;">
+            <!-- Loaded categories -->
+          </select>
+        </div>
+
+        <div class="dict-list-wrapper" id="dict-words-list" style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-card); border-radius: 8px; margin-bottom: 12px; background: var(--bg-app); padding: 8px;">
+          <!-- Keyword lists injected here -->
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="new-keyword-input" class="search-input" style="flex: 1;" placeholder="新しいキーワードを追加..." disabled>
+          <button class="btn-primary" id="add-keyword-btn" style="width: auto; padding: 10px 16px; box-shadow: none;" disabled>
+            追加
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- TOAST POPUP NOTIFICATION -->
+    <div class="toast-container" id="toast-notif"></div>
+
+    <!-- ================= MODAL OVERLAYS ================= -->
+    
+    <!-- Explicit User-Triggered Login Modal -->
+    <div class="modal-overlay" id="modal-login">
+      <div class="modal-content" style="text-align: center; padding: 32px 24px;">
+        <h3 class="modal-header" style="font-size: 1.4rem; margin-bottom: 8px; font-weight: 400; letter-spacing: 0.05em;">文学ノート</h3>
+        <p class="modal-description" style="margin-bottom: 24px;">本アプリを利用するには、Googleアカウントでのログインが必要です。</p>
+        <button class="btn-primary" id="login-btn" style="box-shadow: var(--shadow-sm);">
+          Googleアカウントでログイン
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirm Remove Favorite Modal -->
+    <div class="modal-overlay" id="modal-remove-fav">
+      <div class="modal-content">
+        <h3 class="modal-header">お気に入りから削除しますか？</h3>
+        <p class="modal-description">お気に入りのリストから除外されますが、文章自体は削除されません。</p>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="fav-cancel-btn">キャンセル</button>
+          <button class="btn-danger" id="fav-confirm-btn">削除する</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Smart Auto-Learning Modal -->
+    <div class="modal-overlay" id="modal-auto-learn">
+      <div class="modal-content">
+        <h3 class="modal-header" id="learning-modal-title">自動学習の候補</h3>
+        <p class="modal-description">追加されたカテゴリーに対する特徴語を選択し、自動判定辞書に追加できます。（タップして選択）</p>
+        
+        <div class="category-chips-list" id="learning-word-chips" style="max-height: 120px; overflow-y: auto; padding: 6px; border: 1px solid var(--border-card); border-radius: 8px; margin-bottom: 12px;">
+          <!-- Dynamic word chips -->
+        </div>
+        
+        <input type="text" class="input-text-field" id="learning-custom-word" style="margin-bottom: 16px;" placeholder="手動で別の単語を追加登録する場合は入力">
+
+        <div class="modal-footer">
+          <button class="btn-secondary" id="learning-skip-btn">スキップ</button>
+          <button class="btn-primary" id="learning-save-btn" style="width: auto; padding: 10px 16px; box-shadow: none;">学習する</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIC ================= -->
+  <script>
+    // --- Firebase Configuration ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyCq8lXTY_HFE0wWRX27zGx57NpSnmgpxOg",
+      authDomain: "newproject-ea069.firebaseapp.com",
+      projectId: "newproject-ea069",
+      storageBucket: "newproject-ea069.firebasestorage.app",
+      messagingSenderId: "1003214272180",
+      appId: "1:1003214272180:web:3b023e15a18b6ee77ac9e1"
+    };
+
+    // オーナーアカウントUID制限を残しつつ、ログインした全てのユーザーが「自分のデータ」をパーソナルに保持・編集できるように設計を最適化
+    const OWNER_UID = "ZF7sLJ9YL5fVtpbSr0tPETL8Shc2";
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // デフォルトカテゴリ
+    const DEFAULT_CATEGORIES = [
+      '歩く', '泣く', '怒る', '喜ぶ', '驚く', '会話', '恋愛', 
+      '戦闘', '夜', '朝', '学校', '家', '雨', '移動', '説明', 'その他'
+    ];
+
+    const INITIAL_DICTIONARY = {
+      '歩く': ['歩く', '歩いた', '歩いて', '散歩', '進む', '向かう', '走る', '移動'],
+      '泣く': ['涙', '泣く', '泣いた', '号泣', 'すすり泣く', '嗚咽'],
+      '怒る': ['怒る', '激怒', '腹が立つ', '怒鳴る', '苛立つ'],
+      '喜ぶ': ['喜ぶ', '笑顔', '嬉しい', '歓喜', '微笑む'],
+      '驚く': ['驚く', 'びっくり', '仰天', '目を見開く'],
+      '会話': ['言った', '話した', '尋ねた', '答えた', '叫んだ'],
+      '恋愛': ['好き', '恋', '愛', 'キス', '抱きしめる'],
+      '戦闘': ['戦う', '攻撃', '殴る', '剣', '銃', '敵'],
+      '夜': ['夜', '深夜', '月', '暗闇'],
+      '朝': ['朝', '早朝', '日の出'],
+      '学校': ['学校', '教室', '先生', '生徒', '校門'],
+      '家': ['家', '自宅', '部屋', 'リビング', '玄関'],
+      '雨': ['雨', '豪雨', '小雨', '傘'],
+      '移動': ['電車', 'バス', '車', '駅', '飛行機'],
+      '説明': ['つまり', '例えば', '要するに', '解説', '説明']
+    };
+
+    // --- Database Wrapper Class (Cloud Firestore) ---
+    class LibraryDatabase {
+      constructor() {
+        this.firestore = db;
+      }
+
+      init() {
+        return Promise.resolve();
+      }
+
+      // 辞書の初期シードデータを投入（管理者または初期設定用）
+      async seedDictionary(ownerUid) {
+        if (!ownerUid) return;
+        const snapshot = await this.firestore.collection('dictionary').limit(1).get();
+        if (!snapshot.empty) return;
+
+        const batch = this.firestore.batch();
+        for (const [category, words] of Object.entries(INITIAL_DICTIONARY)) {
+          for (const word of words) {
+            const docRef = this.firestore.collection('dictionary').doc();
+            batch.set(docRef, { category, word, ownerUid });
+          }
+        }
+        await batch.commit();
+      }
+
+      // 全ての自動判定ワードを取得
+      async getDictionary() {
+        const snapshot = await this.firestore.collection('dictionary').get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      }
+
+      // 辞書への追加
+      async addDictionaryWord(category, word, ownerUid) {
+        const docRef = await this.firestore.collection('dictionary').add({ category, word, ownerUid });
+        return docRef.id;
+      }
+
+      // 辞書の削除
+      async removeDictionaryWord(id) {
+        await this.firestore.collection('dictionary').doc(id).delete();
+      }
+
+      // 分割された文章の一括追加
+      async addSentences(sentencesBatch, ownerUid) {
+        const batch = this.firestore.batch();
+        sentencesBatch.forEach(item => {
+          const docRef = this.firestore.collection('sentences').doc();
+          batch.set(docRef, {
+            text: item.text,
+            source: item.source || '直接入力',
+            categories: item.categories || ['その他'],
+            favorite: item.favorite || false,
+            createdAt: item.createdAt || Date.now(),
+            ownerUid: ownerUid
+          });
+        });
+        await batch.commit();
+      }
+
+      // 自分自身（ログイン中ユーザー）の文章のみをFirestoreから取得（セキュリティ・プライバシー最適化）
+      async getAllSentences(ownerUid) {
+        if (!ownerUid) return [];
+        const snapshot = await this.firestore.collection('sentences')
+          .where('ownerUid', '==', ownerUid)
+          .get();
+        return snapshot.docs.map(doc => {
+          const data = doc.data();
+          // 後方互換性：既存の isFavorite も favorite フィールドへ相互変換
+          const favorite = (data.favorite !== undefined) ? data.favorite : (data.isFavorite || false);
+          return { id: doc.id, ...data, favorite };
+        });
+      }
+
+      // カテゴリを指定したクエリ（Firestoreフィルタ用、クライアント側フィルタと併用可能）
+      async getSentencesByCategory(ownerUid, category) {
+        if (!ownerUid) return [];
+        const snapshot = await this.firestore.collection('sentences')
+          .where('ownerUid', '==', ownerUid)
+          .where('categories', 'array-contains', category)
+          .get();
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      }
+
+      // 単一ドキュメント更新
+      async updateSentence(id, updateData) {
+        await this.firestore.collection('sentences').doc(id).update(updateData);
+      }
+    }
+
+    // --- App Controller State ---
+    const App = {
+      db: new LibraryDatabase(),
+      loadedSentences: [],
+      currentTab: 'view-home',
+      fontSizeClass: 'size-medium',
+      deduplicateEnabled: true,
+      autocompleteEnabled: true, // 入力候補表示ON/OFFステート
+      
+      currentUser: null,
+      isOwner: false,
+      allKnownCategories: [...DEFAULT_CATEGORIES], // 自由追加されたものを含む動的カテゴリ
+      selectedRegisterCategories: new Set(), // 登録時に選択されている複数カテゴリ
+
+      limitHome: 30,
+      limitFav: 30,
+      limitCat: 30,
+      
+      selectedCategoryFilter: null, // カテゴリ一覧で選択中のカテゴリ
+
+      pendingFavAction: null,
+      pendingLearnAction: null,
+
+      async init() {
+        await this.db.init();
+
+        // 表示フォントサイズ設定
+        const savedFontSize = localStorage.getItem('fontSize') || 'size-medium';
+        this.fontSizeClass = savedFontSize;
+        document.getElementById('size-selector-home').value = savedFontSize;
+        document.getElementById('size-selector-setting').value = savedFontSize;
+
+        // 重複除外設定
+        const savedDedup = localStorage.getItem('deduplicate') !== 'false';
+        this.deduplicateEnabled = savedDedup;
+        document.getElementById('dedup-chk').checked = savedDedup;
+        document.getElementById('dedup-chk-setting').checked = savedDedup;
+
+        // ④ 入力候補ON/OFF設定の復元
+        const savedAutocomplete = localStorage.getItem('autocomplete') !== 'false';
+        this.autocompleteEnabled = savedAutocomplete;
+        document.getElementById('autocomplete-toggle-chk').checked = savedAutocomplete;
+
+        // イベントリスナーの登録
+        this.registerEvents();
+
+        // 認証状況確認の開始
+        this.setupAuth();
+      },
+
+      setupAuth() {
+        auth.onAuthStateChanged(async (user) => {
+          const loginModal = document.getElementById('modal-login');
+          if (user) {
+            this.currentUser = user;
+            this.isOwner = (user.uid === OWNER_UID);
+            
+            if (loginModal) loginModal.classList.remove('active');
+
+            // ログイン済みユーザーに対して機能をフル有効化
+            this.enableUserControls();
+
+            // 辞書のデフォルトシード
+            await this.db.seedDictionary(this.currentUser.uid);
+            
+            // データの読み込み
+            await this.reloadData();
+          } else {
+            this.currentUser = null;
+            this.isOwner = false;
+            if (loginModal) loginModal.classList.add('active');
+          }
+        });
+
+        // ログインボタン処理
+        const loginBtn = document.getElementById('login-btn');
+        if (loginBtn) {
+          loginBtn.addEventListener('click', () => {
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+              .then(() => {
+                this.showToast("ログインしました。");
+              })
+              .catch(err => {
+                console.error("ログインエラー:", err);
+                if (err.code === 'auth/popup-blocked') {
+                  this.showToast("ポップアップがブロックされました。ブラウザのポップアップを許可してください。", "warning");
+                } else {
+                  this.showToast("ログインに失敗しました。", "warning");
+                }
+              });
+          });
+        }
+      },
+
+      // 一般ログインユーザーでも文学ノートとしての追加、編集、青空文庫読み込みができるように操作制限を最適化
+      enableUserControls() {
+        const elements = [
+          'text-input', 'split-btn', 'new-keyword-input', 'add-keyword-btn',
+          'aozora-url-input', 'aozora-load-btn'
+        ];
+        elements.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = false;
+        });
+      },
+
+      async reloadData() {
+        if (!this.currentUser) return;
+        this.loadedSentences = await this.db.getAllSentences(this.currentUser.uid);
+        this.loadedSentences.sort((a, b) => b.createdAt - a.createdAt);
+
+        // 文章に存在するカスタムカテゴリも抽出して動的カテゴリリストを統合
+        const customCategories = new Set(DEFAULT_CATEGORIES);
+        this.loadedSentences.forEach(s => {
+          if (s.categories && Array.isArray(s.categories)) {
+            s.categories.forEach(c => customCategories.add(c));
+          }
+        });
+        this.allKnownCategories = Array.from(customCategories);
+
+        this.populateDropdowns();
+        this.renderRegisterCategoryChips();
+        this.renderHomeList();
+        this.renderFavList();
+        this.renderCategorySummary();
+        this.renderCategoryViewList();
+        this.updateSettingDictList();
+      },
+
+      // --- Event Binding System ---
+      registerEvents() {
+        // ナビゲーション切り替え
+        document.querySelectorAll('.top-nav .nav-item').forEach(button => {
+          button.addEventListener('click', (e) => {
+            const target = button.getAttribute('data-target');
+            this.switchView(target);
+          });
+        });
+
+        // フォントサイズ変更
+        const changeFontSize = (e) => {
+          this.fontSizeClass = e.target.value;
+          localStorage.setItem('fontSize', this.fontSizeClass);
+          document.getElementById('size-selector-home').value = this.fontSizeClass;
+          document.getElementById('size-selector-setting').value = this.fontSizeClass;
+          this.renderHomeList();
+          this.renderFavList();
+          this.renderCategoryViewList();
+        };
+        document.getElementById('size-selector-home').addEventListener('change', changeFontSize);
+        document.getElementById('size-selector-setting').addEventListener('change', changeFontSize);
+
+        // 重複除外設定
+        const toggleDeduplication = (e) => {
+          const isChecked = e.target.checked;
+          this.deduplicateEnabled = isChecked;
+          localStorage.setItem('deduplicate', isChecked ? 'true' : 'false');
+          document.getElementById('dedup-chk').checked = isChecked;
+          document.getElementById('dedup-chk-setting').checked = isChecked;
+          
+          this.limitHome = 30;
+          this.limitFav = 30;
+          this.renderHomeList();
+          this.renderFavList();
+          this.renderCategoryViewList();
+        };
+        document.getElementById('dedup-chk').addEventListener('change', toggleDeduplication);
+        document.getElementById('dedup-chk-setting').addEventListener('change', toggleDeduplication);
+
+        // ④ 入力補助トグル
+        document.getElementById('autocomplete-toggle-chk').addEventListener('change', (e) => {
+          this.autocompleteEnabled = e.target.checked;
+          localStorage.setItem('autocomplete', this.autocompleteEnabled ? 'true' : 'false');
+          this.showToast(this.autocompleteEnabled ? "入力補助を有効にしました。" : "入力補助を無効にしました。");
+          this.hideAutocomplete();
+        });
+
+        // 分割保存処理
+        document.getElementById('split-btn').addEventListener('click', () => this.handleTextSplit());
+
+        // 青空文庫読み込み処理
+        document.getElementById('aozora-load-btn').addEventListener('click', () => this.handleAozoraImport());
+
+        // 検索フィルター
+        document.getElementById('search-home').addEventListener('input', () => {
+          this.limitHome = 30;
+          this.renderHomeList();
+        });
+        document.getElementById('cat-filter-home').addEventListener('change', () => {
+          this.limitHome = 30;
+          this.renderHomeList();
+        });
+        document.getElementById('search-fav').addEventListener('input', () => {
+          this.limitFav = 30;
+          this.renderFavList();
+        });
+        document.getElementById('search-cat-view').addEventListener('input', () => {
+          this.limitCat = 30;
+          this.renderCategoryViewList();
+        });
+
+        // ④ 入力候補（前方一致）の監視
+        const textInput = document.getElementById('text-input');
+        textInput.addEventListener('input', (e) => {
+          this.handleAutocompleteSearch(e.target.value);
+        });
+        textInput.addEventListener('blur', () => {
+          // 遅延させてクリックイベントが先行するようにする
+          setTimeout(() => this.hideAutocomplete(), 200);
+        });
+
+        // ② カテゴリ新規作成ボタン
+        document.getElementById('add-category-tag-btn').addEventListener('click', () => {
+          this.handleAddNewRegisterCategory();
+        });
+        document.getElementById('new-category-tag-input').addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            this.handleAddNewRegisterCategory();
+          }
+        });
+
+        // 無限スクロール
+        window.addEventListener('scroll', () => {
+          const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+          if (scrollTop + clientHeight >= scrollHeight - 120) {
+            if (this.currentTab === 'view-home') {
+              this.loadMoreHome();
+            } else if (this.currentTab === 'view-favorites') {
+              this.loadMoreFav();
+            }
+          }
+        });
+
+        document.getElementById('dict-cat-selector').addEventListener('change', () => this.updateSettingDictList());
+        document.getElementById('add-keyword-btn').addEventListener('click', () => this.handleAddKeyword());
+
+        // モーダルイベント
+        document.getElementById('fav-cancel-btn').addEventListener('click', () => this.closeFavModal(false));
+        document.getElementById('fav-confirm-btn').addEventListener('click', () => this.closeFavModal(true));
+        
+        document.getElementById('learning-skip-btn').addEventListener('click', () => this.closeLearningModal(false));
+        document.getElementById('learning-save-btn').addEventListener('click', () => this.closeLearningModal(true));
+      },
+
+      switchView(viewId) {
+        this.currentTab = viewId;
+        document.querySelectorAll('.app-view').forEach(view => {
+          view.classList.toggle('active', view.id === viewId);
+        });
+        document.querySelectorAll('.top-nav .nav-item').forEach(nav => {
+          nav.classList.toggle('active', nav.getAttribute('data-target') === viewId);
+        });
+        window.scrollTo({ top: 0 });
+        this.hideAutocomplete();
+      },
+
+      populateDropdowns() {
+        const catFilterHome = document.getElementById('cat-filter-home');
+        const dictCatSelector = document.getElementById('dict-cat-selector');
+
+        let selectOptions = `<option value="all">すべてのカテゴリ</option>`;
+        let listOptions = '';
+        this.allKnownCategories.forEach(c => {
+          selectOptions += `<option value="${c}">${c}</option>`;
+          listOptions += `<option value="${c}">${c}</option>`;
+        });
+
+        catFilterHome.innerHTML = selectOptions;
+        dictCatSelector.innerHTML = listOptions;
+      },
+
+      // ② 新規追加用のカテゴリチップリストを描画（トグル可能）
+      renderRegisterCategoryChips() {
+        const container = document.getElementById('register-category-chips');
+        if (!container) return;
+
+        container.innerHTML = this.allKnownCategories.map(cat => {
+          const isSelected = this.selectedRegisterCategories.has(cat) ? 'selected' : '';
+          return `
+            <span class="category-chip-interactive ${isSelected}" onclick="App.toggleRegisterCategory('${this.escapeHtml(cat)}')">
+              ${this.escapeHtml(cat)}
+            </span>
+          `;
+        }).join('');
+      },
+
+      toggleRegisterCategory(cat) {
+        if (this.selectedRegisterCategories.has(cat)) {
+          this.selectedRegisterCategories.delete(cat);
+        } else {
+          this.selectedRegisterCategories.add(cat);
+        }
+        this.renderRegisterCategoryChips();
+      },
+
+      // ② 自由入力から新しいカテゴリを動的追加
+      handleAddNewRegisterCategory() {
+        const input = document.getElementById('new-category-tag-input');
+        const newCat = input.value.trim();
+        if (!newCat) return;
+
+        if (!this.allKnownCategories.includes(newCat)) {
+          this.allKnownCategories.push(newCat);
+        }
+        this.selectedRegisterCategories.add(newCat);
+        input.value = '';
+
+        this.populateDropdowns();
+        this.renderRegisterCategoryChips();
+        this.renderCategorySummary();
+      },
+
+      showToast(message, type = 'success') {
+        const toast = document.getElementById('toast-notif');
+        toast.textContent = message;
+        toast.style.background = type === 'success' ? '#4fb3ff' : '#ff7e7e';
+        toast.style.display = 'block';
+        setTimeout(() => {
+          toast.style.display = 'none';
+        }, 2500);
+      },
+
+      normalizeText(text) {
+        if (!text) return '';
+        return text
+          .trim()
+          .replace(/\r?\n/g, ' ')
+          .replace(/　/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      },
+
+      // ④ 前方一致での入力候補サジェスト機能
+      handleAutocompleteSearch(val) {
+        if (!this.autocompleteEnabled || !val.trim()) {
+          this.hideAutocomplete();
+          return;
+        }
+
+        const normalizedVal = val.trim().toLowerCase();
+        // 重複排除しながら前方一致の文章を検索
+        const matches = [];
+        const seen = new Set();
+        
+        for (const item of this.loadedSentences) {
+          if (item.text && item.text.toLowerCase().startsWith(normalizedVal)) {
+            if (!seen.has(item.text)) {
+              seen.add(item.text);
+              matches.push(item.text);
+            }
+          }
+          if (matches.length >= 5) break; // 最大5件制限
+        }
+
+        if (matches.length === 0) {
+          this.hideAutocomplete();
+          return;
+        }
+
+        let box = document.getElementById('autocomplete-box');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'autocomplete-box';
+          box.className = 'autocomplete-box';
+          document.getElementById('text-input').parentNode.appendChild(box);
+        }
+
+        box.innerHTML = matches.map(m => `
+          <div class="autocomplete-item" onclick="App.selectAutocompleteCandidate('${this.escapeHtml(m)}')">
+            ${this.escapeHtml(m)}
+          </div>
+        `).join('');
+        box.style.display = 'block';
+      },
+
+      hideAutocomplete() {
+        const box = document.getElementById('autocomplete-box');
+        if (box) box.style.display = 'none';
+      },
+
+      selectAutocompleteCandidate(text) {
+        const input = document.getElementById('text-input');
+        input.value = text;
+        this.hideAutocomplete();
+        this.showToast("候補から文章を自動補完しました。");
+      },
+
+      // ① 青空文庫URLからのテキスト取得とパース
+      async handleAozoraImport() {
+        const urlInput = document.getElementById('aozora-url-input');
+        const url = urlInput.value.trim();
+        if (!url) {
+          this.showToast("青空文庫のURLを入力してください。", "warning");
+          return;
+        }
+
+        this.showToast("青空文庫からデータを取得しています...", "success");
+        
+        try {
+          // CORS制限回避プロキシ経由
+          const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+          const response = await fetch(proxyUrl);
+          if (!response.ok) throw new Error("CORSプロキシ経由のロードに失敗しました。");
+          
+          let text = await response.text();
+          if (!text) {
+            this.showToast("文章が取得できませんでした。", "warning");
+            return;
+          }
+
+          // HTMLタグやルビの除去処理
+          text = text.replace(/<[^>]+>/g, ''); // シンプルなHTMLタグ除去
+          text = text.replace(/《[^》]+》/g, ''); // ルビの除去
+          text = text.replace(/［＃[^］]+］/g, ''); // 注記の除去
+          text = text.replace(/｜/g, ''); // ルビ開始記号の除去
+
+          // 「。！？および改行（\n）」を対象に精密分割
+          const delimiterRegex = /[^。！？\n\r]+[。！？\n\r]*/g;
+          const rawSegments = text.match(delimiterRegex) || [];
+          
+          const preparedItems = [];
+          const now = Date.now();
+          const selectedCats = Array.from(this.selectedRegisterCategories);
+          const finalCats = selectedCats.length > 0 ? selectedCats : ['その他'];
+
+          rawSegments.forEach(segment => {
+            const normalized = this.normalizeText(segment);
+            if (!normalized || normalized.length < 3) return; // あまりに短いノイズは除外
+
+            preparedItems.push({
+              text: normalized,
+              source: `青空文庫: ${url.substring(0, 30)}...`,
+              categories: finalCats,
+              favorite: false,
+              createdAt: now
+            });
+          });
+
+          if (preparedItems.length === 0) {
+            this.showToast("分割対象となる文章が見つかりませんでした。", "warning");
+            return;
+          }
+
+          // データベースへバッチ流し込み
+          await this.db.addSentences(preparedItems, this.currentUser.uid);
+          urlInput.value = '';
+          this.showToast(`${preparedItems.length}件の文を青空文庫から読み込みました。`);
+          await this.reloadData();
+
+        } catch (error) {
+          console.error(error);
+          this.showToast("読み込み中にエラーが発生しました。URLを確認してください。", "warning");
+        }
+      },
+
+      async handleTextSplit() {
+        if (!this.currentUser) return;
+
+        const textInput = document.getElementById('text-input').value;
+        if (!textInput.trim()) {
+          this.showToast('文章を入力してください。', 'warning');
+          return;
+        }
+
+        const splitByComma = document.getElementById('split-comma-chk').checked;
+        const delimiterRegex = splitByComma ? /[。、！？\n]/ : /[。！？\n]/;
+        const rawSegments = [];
+        let currentSegment = '';
+        let insideQuote = 0;
+
+        for (let i = 0; i < textInput.length; i++) {
+          const char = textInput[i];
+          currentSegment += char;
+
+          if (char === '「') {
+            insideQuote++;
+          } else if (char === '」') {
+            if (insideQuote > 0) insideQuote--;
+          }
+
+          if (insideQuote === 0 && delimiterRegex.test(char)) {
+            rawSegments.push(currentSegment);
+            currentSegment = '';
+          }
+        }
+        if (currentSegment.trim()) {
+          rawSegments.push(currentSegment);
+        }
+        
+        const preparedItems = [];
+        const dictionary = await this.db.getDictionary();
+        const now = Date.now();
+
+        // 選択されたカテゴリ
+        const selectedCats = Array.from(this.selectedRegisterCategories);
+
+        rawSegments.forEach(segment => {
+          const normalized = this.normalizeText(segment);
+          if (!normalized) return;
+
+          // 自動カテゴリ辞書でのマッチング
+          const detectedCategories = new Set(selectedCats);
+          dictionary.forEach(entry => {
+            if (normalized.includes(entry.word)) {
+              detectedCategories.add(entry.category);
+            }
+          });
+
+          if (detectedCategories.size === 0) {
+            detectedCategories.add('その他');
+          }
+
+          preparedItems.push({
+            text: normalized,
+            source: '直接入力',
+            categories: Array.from(detectedCategories),
+            favorite: false,
+            createdAt: now
+          });
+        });
+
+        if (preparedItems.length === 0) {
+          this.showToast('分割できる文章がありませんでした。', 'warning');
+          return;
+        }
+
+        await this.db.addSentences(preparedItems, this.currentUser.uid);
+        document.getElementById('text-input').value = '';
+        this.selectedRegisterCategories.clear();
+        this.renderRegisterCategoryChips();
+        this.showToast(`${preparedItems.length}件の文を登録しました。`);
+        
+        await this.reloadData();
+      },
+
+      processDeduplication(items) {
+        if (!this.deduplicateEnabled) {
+          return items.map(item => ({ ...item, displayCount: 1 }));
+        }
+
+        const map = new Map();
+        items.forEach(item => {
+          const key = item.text;
+          if (map.has(key)) {
+            const existing = map.get(key);
+            existing.displayCount += 1;
+            if (item.favorite) {
+              existing.favorite = true;
+            }
+            if (item.createdAt > existing.createdAt) {
+              existing.createdAt = item.createdAt;
+            }
+            const unionCategories = new Set([...existing.categories, ...item.categories]);
+            existing.categories = Array.from(unionCategories);
+          } else {
+            map.set(key, { ...item, displayCount: 1 });
+          }
+        });
+
+        return Array.from(map.values());
+      },
+
+      renderHomeList() {
+        const listEl = document.getElementById('list-home');
+        const query = document.getElementById('search-home').value.toLowerCase().trim();
+        const categoryFilter = document.getElementById('cat-filter-home').value;
+
+        const filtered = this.loadedSentences.filter(item => {
+          const matchQuery = !query || item.text.toLowerCase().includes(query) || item.categories.some(c => c.toLowerCase().includes(query));
+          const matchCategory = categoryFilter === 'all' || item.categories.includes(categoryFilter);
+          return matchQuery && matchCategory;
+        });
+
+        const processed = this.processDeduplication(filtered);
+
+        if (processed.length === 0) {
+          listEl.innerHTML = this.getEmptyStateMarkup();
+          return;
+        }
+
+        const subset = processed.slice(0, this.limitHome);
+        listEl.innerHTML = subset.map(item => this.compileCardHTML(item)).join('');
+      },
+
+      // ③ お気に入り一覧表示
+      renderFavList() {
+        const listEl = document.getElementById('list-favorites');
+        const query = document.getElementById('search-fav').value.toLowerCase().trim();
+
+        const filtered = this.loadedSentences.filter(item => {
+          if (!item.favorite) return false;
+          return !query || item.text.toLowerCase().includes(query);
+        });
+
+        const processed = this.processDeduplication(filtered);
+
+        if (processed.length === 0) {
+          listEl.innerHTML = this.getEmptyStateMarkup("お気に入りの文章はまだありません。");
+          return;
+        }
+
+        const subset = processed.slice(0, this.limitFav);
+        listEl.innerHTML = subset.map(item => this.compileCardHTML(item)).join('');
+      },
+
+      // ② カテゴリ一覧ページ（サマリー表示）
+      renderCategorySummary() {
+        const container = document.getElementById('category-summary-container');
+        if (!container) return;
+
+        // 各カテゴリのカウントを算出
+        const categoryCounts = {};
+        this.allKnownCategories.forEach(c => categoryCounts[c] = 0);
+        
+        this.loadedSentences.forEach(s => {
+          if (s.categories) {
+            s.categories.forEach(c => {
+              categoryCounts[c] = (categoryCounts[c] || 0) + 1;
+            });
+          }
+        });
+
+        container.innerHTML = this.allKnownCategories.map(cat => {
+          const count = categoryCounts[cat] || 0;
+          const isActive = this.selectedCategoryFilter === cat ? 'active' : '';
+          return `
+            <div class="category-summary-card ${isActive}" onclick="App.selectCategoryFilter('${this.escapeHtml(cat)}')">
+              <span class="category-summary-name">${this.escapeHtml(cat)}</span>
+              <span class="category-summary-count">${count}</span>
+            </div>
+          `;
+        }).join('');
+      },
+
+      selectCategoryFilter(category) {
+        if (this.selectedCategoryFilter === category) {
+          this.selectedCategoryFilter = null; // トグル解除
+        } else {
+          this.selectedCategoryFilter = category;
+        }
+        this.renderCategorySummary();
+        this.renderCategoryViewList();
+      },
+
+      renderCategoryViewList() {
+        const listEl = document.getElementById('list-category-view');
+        if (!listEl) return;
+
+        if (!this.selectedCategoryFilter) {
+          listEl.innerHTML = `<div class="empty-placeholder"><p>上のカテゴリをタップして文章を表示します。</p></div>`;
+          return;
+        }
+
+        const query = document.getElementById('search-cat-view').value.toLowerCase().trim();
+        const filtered = this.loadedSentences.filter(item => {
+          const matchCategory = item.categories.includes(this.selectedCategoryFilter);
+          const matchQuery = !query || item.text.toLowerCase().includes(query);
+          return matchCategory && matchQuery;
+        });
+
+        const processed = this.processDeduplication(filtered);
+
+        if (processed.length === 0) {
+          listEl.innerHTML = this.getEmptyStateMarkup();
+          return;
+        }
+
+        const subset = processed.slice(0, this.limitCat);
+        listEl.innerHTML = subset.map(item => this.compileCardHTML(item)).join('');
+      },
+
+      // 文カード描画（文学的な美しさを重視したデザイン）
+      compileCardHTML(item) {
+        const isFavClass = item.favorite ? 'active' : '';
+        const tagsHTML = item.categories.map(cat => `<span class="category-tag">${this.escapeHtml(cat)}</span>`).join('');
+        const formattedDate = new Date(item.createdAt).toLocaleDateString('ja-JP', {
+          year: 'numeric', month: '2-digit', day: '2-digit'
+        });
+
+        const countBadgeHTML = (this.deduplicateEnabled && item.displayCount > 1) 
+          ? `<div class="count-badge">出現：${item.displayCount}回</div>` 
+          : '';
+
+        // カテゴリのインライン変更
+        const chipsHTML = this.allKnownCategories.map(cat => {
+          const isChecked = item.categories.includes(cat) ? 'checked' : '';
+          return `
+            <label class="checkbox-chip">
+              <input type="checkbox" data-cat="${this.escapeHtml(cat)}" ${isChecked} onchange="App.handleInlineCategoryChange(event, '${item.id}')">
+              <span>${this.escapeHtml(cat)}</span>
+            </label>
+          `;
+        }).join('');
+
+        return `
+          <div class="sentence-card" id="card-${item.id}">
+            <button class="fav-toggle-btn ${isFavClass}" onclick="App.handleFavToggle('${item.id}')" aria-label="お気に入り登録">
+              <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            </button>
+            <p class="sentence-text ${this.fontSizeClass}">${this.escapeHtml(item.text)}</p>
+            
+            ${countBadgeHTML}
+            
+            <div class="tags-list" id="card-tags-${item.id}">
+              ${tagsHTML}
+            </div>
+            <div class="card-footer-actions">
+              <span class="card-date">${formattedDate} &middot; ${this.escapeHtml(item.source || '直接入力')}</span>
+              <button class="edit-tag-btn" onclick="App.toggleInlinePanel('${item.id}')">
+                カテゴリ編集
+              </button>
+            </div>
+            
+            <div class="inline-edit-panel" id="edit-panel-${item.id}">
+              <div class="edit-dropdown-grid">
+                ${chipsHTML}
+              </div>
+              <div class="inline-add-cat-row">
+                <input type="text" placeholder="新規カテゴリ名を入力して追加..." onkeydown="if(event.key==='Enter') App.addInlineCategory(event, '${item.id}')">
+              </div>
+            </div>
+          </div>
+        `;
+      },
+
+      getEmptyStateMarkup(msg = "文章が見つかりませんでした。") {
+        return `
+          <div class="empty-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            <p>${msg}</p>
+          </div>
+        `;
+      },
+
+      loadMoreHome() {
+        if (this.limitHome < this.loadedSentences.length) {
+          this.limitHome += 30;
+          this.renderHomeList();
+        }
+      },
+
+      loadMoreFav() {
+        const favCount = this.loadedSentences.filter(i => i.favorite).length;
+        if (this.limitFav < favCount) {
+          this.limitFav += 30;
+          this.renderFavList();
+        }
+      },
+
+      toggleInlinePanel(id) {
+        const panel = document.getElementById(`edit-panel-${id}`);
+        if (panel) {
+          panel.classList.toggle('active');
+        }
+      },
+
+      // ③ お気に入りトグル処理 (favorite boolean化)
+      async handleFavToggle(id) {
+        const item = this.loadedSentences.find(s => s.id === id);
+        if (!item) return;
+
+        if (item.favorite) {
+          this.pendingFavAction = item;
+          document.getElementById('modal-remove-fav').classList.add('active');
+        } else {
+          const targetText = item.text;
+          const batch = this.db.firestore.batch();
+
+          this.loadedSentences.forEach(s => {
+            if (s.text === targetText) {
+              s.favorite = true;
+              const docRef = this.db.firestore.collection('sentences').doc(s.id);
+              batch.update(docRef, { favorite: true });
+            }
+          });
+
+          await batch.commit();
+          this.showToast('お気に入りに追加しました。');
+          this.renderHomeList();
+          this.renderFavList();
+          this.renderCategoryViewList();
+        }
+      },
+
+      async closeFavModal(shouldRemove) {
+        document.getElementById('modal-remove-fav').classList.remove('active');
+        if (shouldRemove && this.pendingFavAction) {
+          const targetText = this.pendingFavAction.text;
+          const batch = this.db.firestore.batch();
+
+          this.loadedSentences.forEach(s => {
+            if (s.text === targetText) {
+              s.favorite = false;
+              const docRef = this.db.firestore.collection('sentences').doc(s.id);
+              batch.update(docRef, { favorite: false });
+            }
+          });
+
+          await batch.commit();
+          this.showToast('お気に入りから削除しました。');
+          this.renderHomeList();
+          this.renderFavList();
+          this.renderCategoryViewList();
+        }
+        this.pendingFavAction = null;
+      },
+
+      // ② カテゴリのインライン変更
+      async handleInlineCategoryChange(event, sentenceId) {
+        const item = this.loadedSentences.find(s => s.id === sentenceId);
+        if (!item) return;
+
+        const checkbox = event.target;
+        const categoryChanged = checkbox.getAttribute('data-cat');
+        const isChecked = checkbox.checked;
+
+        const previousCategories = [...item.categories];
+        let nextCategories = [];
+
+        if (isChecked) {
+          nextCategories = [...previousCategories, categoryChanged];
+          if (categoryChanged !== 'その他') {
+            nextCategories = nextCategories.filter(c => c !== 'その他');
+          }
+        } else {
+          nextCategories = previousCategories.filter(c => c !== categoryChanged);
+          if (nextCategories.length === 0) {
+            nextCategories.push('その他');
+          }
+        }
+
+        item.categories = nextCategories;
+        await this.db.updateSentence(item.id, { categories: nextCategories });
+
+        const tagsContainer = document.getElementById(`card-tags-${sentenceId}`);
+        if (tagsContainer) {
+          tagsContainer.innerHTML = item.categories.map(cat => `<span class="category-tag">${this.escapeHtml(cat)}</span>`).join('');
+        }
+
+        // 同一文章のカテゴリ同期
+        const targetText = item.text;
+        const batch = this.db.firestore.batch();
+        this.loadedSentences.forEach(s => {
+          if (s.text === targetText && s.id !== item.id) {
+            s.categories = [...item.categories];
+            const docRef = this.db.firestore.collection('sentences').doc(s.id);
+            batch.update(docRef, { categories: s.categories });
+          }
+        });
+        await batch.commit();
+
+        if (isChecked && categoryChanged !== 'その他') {
+          this.triggerAutoLearning(item.text, categoryChanged);
+        } else {
+          this.renderHomeList();
+          this.renderFavList();
+          this.renderCategorySummary();
+          this.renderCategoryViewList();
+        }
+      },
+
+      // インライン変更パネルから新しいカテゴリを追加する処理
+      async addInlineCategory(event, sentenceId) {
+        const input = event.target;
+        const value = input.value.trim();
+        if (!value) return;
+
+        if (!this.allKnownCategories.includes(value)) {
+          this.allKnownCategories.push(value);
+          this.populateDropdowns();
+          this.renderRegisterCategoryChips();
+          this.renderCategorySummary();
+        }
+
+        const item = this.loadedSentences.find(s => s.id === sentenceId);
+        if (item && !item.categories.includes(value)) {
+          item.categories.push(value);
+          if (item.categories.includes('その他')) {
+            item.categories = item.categories.filter(c => c !== 'その他');
+          }
+          await this.db.updateSentence(item.id, { categories: item.categories });
+          
+          // 同一文章の同期
+          const targetText = item.text;
+          const batch = this.db.firestore.batch();
+          this.loadedSentences.forEach(s => {
+            if (s.text === targetText) {
+              s.categories = [...item.categories];
+              const docRef = this.db.firestore.collection('sentences').doc(s.id);
+              batch.update(docRef, { categories: s.categories });
+            }
+          });
+          await batch.commit();
+        }
+
+        input.value = '';
+        this.renderHomeList();
+        this.renderFavList();
+        this.renderCategorySummary();
+        this.renderCategoryViewList();
+      },
+
+      triggerAutoLearning(sentenceText, newCategory) {
+        const modal = document.getElementById('modal-auto-learn');
+        const titleEl = document.getElementById('learning-modal-title');
+        const chipsContainer = document.getElementById('learning-word-chips');
+        const customInput = document.getElementById('learning-custom-word');
+
+        titleEl.textContent = `学習辞書への登録: 「${newCategory}」`;
+        customInput.value = '';
+        chipsContainer.innerHTML = '';
+
+        const candidates = this.parseDistinctCandidates(sentenceText);
+        if (candidates.length === 0) {
+          chipsContainer.innerHTML = '<span style="font-size:0.85rem;color:var(--color-muted);">抽出できる特徴語がありませんでした。</span>';
+        } else {
+          candidates.forEach(word => {
+            const chip = document.createElement('button');
+            chip.className = 'category-chip-interactive';
+            chip.textContent = word;
+            chip.onclick = () => chip.classList.toggle('selected');
+            chipsContainer.appendChild(chip);
+          });
+        }
+
+        this.pendingLearnAction = {
+          sentenceText,
+          category: newCategory
+        };
+
+        modal.classList.add('active');
+      },
+
+      parseDistinctCandidates(text) {
+        const noise = new Set([
+          'です', 'ます', 'いる', 'ある', 'した', 'れる', 'られる', 'せる', 'させる', 'ない',
+          'もの', 'こと', 'とき', 'これ', 'それ', 'あれ', 'から', 'まで', 'いく', 'くる', 'など'
+        ]);
+        
+        const pattern = /[一-龠]{2,}|[ァ-ヴ]{2,}|[ぁ-ん]{3,}/g;
+        const matches = text.match(pattern) || [];
+        
+        const finalCandidates = new Set();
+        matches.forEach(m => {
+          if (!noise.has(m) && m.length >= 2) {
+            finalCandidates.add(m);
+          }
+        });
+
+        return Array.from(finalCandidates);
+      },
+
+      async closeLearningModal(shouldLearn) {
+        const modal = document.getElementById('modal-auto-learn');
+        modal.classList.remove('active');
+
+        if (shouldLearn && this.pendingLearnAction && this.currentUser) {
+          const chipsContainer = document.getElementById('learning-word-chips');
+          const customWord = document.getElementById('learning-custom-word').value.trim();
+          
+          const selectedWords = Array.from(chipsContainer.querySelectorAll('.category-chip-interactive.selected'))
+            .map(chip => chip.textContent);
+
+          if (customWord) {
+            selectedWords.push(customWord);
+          }
+
+          if (selectedWords.length > 0) {
+            for (const word of selectedWords) {
+              await this.db.addDictionaryWord(this.pendingLearnAction.category, word, this.currentUser.uid);
+            }
+            this.showToast(`${selectedWords.length}件を「${this.pendingLearnAction.category}」として学習しました。`);
+            this.updateSettingDictList();
+          }
+        }
+        
+        this.pendingLearnAction = null;
+        this.renderHomeList();
+        this.renderFavList();
+        this.renderCategorySummary();
+        this.renderCategoryViewList();
+      },
+
+      async updateSettingDictList() {
+        const activeCategory = document.getElementById('dict-cat-selector').value;
+        const listWrapper = document.getElementById('dict-words-list');
+        if (!listWrapper) return;
+        
+        const fullDict = await this.db.getDictionary();
+        const filtered = fullDict.filter(item => item.category === activeCategory);
+
+        if (filtered.length === 0) {
+          listWrapper.innerHTML = '<p style="text-align:center;padding:12px;font-size:0.85rem;color:var(--color-muted);">学習データはまだありません。</p>';
+          return;
+        }
+
+        listWrapper.innerHTML = filtered.map(item => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-card);">
+            <span style="font-size: 0.85rem;">${this.escapeHtml(item.word)}</span>
+            <button style="background:none; border:none; color:#ff7e7e; cursor:pointer; font-size:0.8rem;" onclick="App.handleRemoveKeyword('${item.id}')">削除</button>
+          </div>
+        `).join('');
+      },
+
+      async handleAddKeyword() {
+        if (!this.currentUser) return;
+
+        const activeCategory = document.getElementById('dict-cat-selector').value;
+        const input = document.getElementById('new-keyword-input');
+        const word = input.value.trim();
+
+        if (!word) {
+          this.showToast('単語を入力してください。', 'warning');
+          return;
+        }
+
+        await this.db.addDictionaryWord(activeCategory, word, this.currentUser.uid);
+        input.value = '';
+        this.showToast(`「${activeCategory}」に「${word}」を追加しました。`);
+        this.updateSettingDictList();
+      },
+
+      async handleRemoveKeyword(id) {
+        await this.db.removeDictionaryWord(id);
+        this.showToast('単語を学習辞書から削除しました。');
+        this.updateSettingDictList();
+      },
+
+      escapeHtml(str) {
+        if (!str) return '';
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;");
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      App.init();
+    });
+  </script>
+</body>
+</html>
