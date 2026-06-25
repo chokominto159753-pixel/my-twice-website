@@ -85,8 +85,63 @@
       font-weight: 300;
       letter-spacing: 0.05em;
       color: var(--color-text);
-      border-bottom: 2px solid var(--color-primary-light);
-      padding-bottom: 4px;
+    }
+
+    /* ログインステータス表示 */
+    .status-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-badge.guest {
+      background: #fff1f1;
+      color: #ff6b6b;
+      border: 1px solid #ffd8d8;
+    }
+    .status-badge.logged-in {
+      background: #ebfbeb;
+      color: #2fcc66;
+      border: 1px solid #d3f9df;
+    }
+    
+    .guest-banner {
+      background: #fffbf0;
+      border: 1px solid #ffe8cc;
+      color: #c27800;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+      line-height: 1.6;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .guest-banner svg {
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .guest-overlay-container {
+      position: relative;
+    }
+    .guest-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.94);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding: 24px;
+      text-align: center;
+      backdrop-filter: blur(2px);
     }
 
     /* タブナビゲーション */
@@ -773,7 +828,25 @@
     
     <!-- HEADER -->
     <header class="app-header">
-      <h1 class="app-title">文学ノート</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 2px solid var(--color-primary-light); padding-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <h1 class="app-title">文学ノート</h1>
+          <div id="auth-status-area">
+            <!-- 状態ステータスが動的に入るエリア -->
+          </div>
+        </div>
+        
+        <!-- 動的表示ログイン/ログアウトボタン -->
+        <div id="header-auth-btn-container">
+          <button class="btn-sub" id="header-login-btn" style="width: auto; padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; display: none; align-items: center; gap: 6px; background: var(--color-primary-dark); color: white;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:2px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            Googleログイン
+          </button>
+          <button class="btn-danger" id="header-logout-btn" style="width: auto; padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; display: none;">
+            ログアウト
+          </button>
+        </div>
+      </div>
       
       <!-- TOP NAVIGATION (上部タブ・スマホ対応) -->
       <nav class="top-nav">
@@ -799,6 +872,12 @@
     <!-- ================= HOME VIEW ================= -->
     <main class="app-view active" id="view-home">
       
+      <!-- ゲストモード案内バナー -->
+      <div class="guest-banner" id="home-guest-banner" style="display: none;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span><strong>現在ゲストモード（制限付き）です。</strong><br>文章の一時的な分割・青空文庫の読み込み体験は可能です。リロードを行うとデータはリセットされます。クラウドへの永続保存やお気に入り機能の利用には、右上の「Googleログイン」をご利用ください。</span>
+      </div>
+
       <!-- Input Section -->
       <section class="glass-panel">
         <h2 class="panel-title">
@@ -903,8 +982,19 @@
 
     <!-- ================= ③ FAVORITES VIEW ================= -->
     <main class="app-view" id="view-favorites">
+      <!-- ゲスト用お気に入り誘導プレースホルダー -->
+      <div class="glass-panel" id="fav-guest-prompt" style="display: none; text-align: center; padding: 40px 24px; margin-bottom: 20px;">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary-dark)" stroke-width="2" style="margin-bottom: 16px; opacity: 0.8;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+        <h3 style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px; color: var(--color-text);">お気に入り機能（ログイン限定）</h3>
+        <p style="font-size: 0.85rem; color: var(--color-muted); margin-bottom: 24px; line-height: 1.7; max-width: 420px; margin-left: auto; margin-right: auto;">
+          心に響いた言葉をお気に入り保存し、いつでも読み返すことができます。<br>
+          Googleアカウントでログインして、あなただけの特別な本棚をクラウドに作りましょう。
+        </p>
+        <button class="btn-primary" onclick="App.showLoginPrompt('お気に入り機能を利用するには、ログインが必要です。')" style="max-width: 220px; margin: 0 auto; box-shadow: none;">ログインして機能を解放</button>
+      </div>
+
       <!-- Search & Filters -->
-      <section class="filter-section">
+      <section class="filter-section" id="fav-filter-section">
         <div class="search-input-wrapper" style="grid-column: span 2;">
           <input type="search" class="search-input" id="search-fav" placeholder="お気に入りを検索...">
         </div>
@@ -957,7 +1047,17 @@
       </section>
 
       <!-- Learning Dictionary Management -->
-      <section class="glass-panel">
+      <section class="glass-panel guest-overlay-container" id="dict-management-section">
+        <!-- ゲスト時制限オーバーレイ -->
+        <div class="guest-overlay" id="dict-guest-overlay" style="display: none;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary-dark)" stroke-width="2" style="margin-bottom: 12px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 6px;">辞書カスタマイズ機能（ログイン限定）</h3>
+          <p style="font-size: 0.8rem; color: var(--color-muted); margin-bottom: 16px; max-width: 280px; line-height: 1.5;">
+            ログインすると、お好みの判定用キーワードを学習辞書に登録し、自動カテゴリ分類をあなた専用にパーソナライズできます。
+          </p>
+          <button class="btn-primary" onclick="App.showLoginPrompt('辞書の編集機能を利用するには、ログインが必要です。')" style="width: auto; padding: 8px 18px; font-size: 0.85rem; box-shadow: none;">ログインして機能を解放</button>
+        </div>
+
         <h2 class="settings-group-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">自動解析・辞書管理</h2>
         <p class="modal-description" style="margin-bottom: 16px;">文脈からカテゴリを自動推論するためのキーワードを設定します。</p>
         
@@ -979,17 +1079,30 @@
         </div>
       </section>
 
-      <!-- Account Management (ログアウト) -->
+      <!-- Account Management -->
       <section class="glass-panel">
         <h2 class="settings-group-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">アカウント</h2>
-        <p class="modal-description" style="margin-bottom: 16px;">現在ログイン中のアカウント情報を確認し、ログアウトできます。</p>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <p class="modal-description" style="margin-bottom: 16px;">アカウントの管理やログイン・ログアウトができます。</p>
+        
+        <!-- ログイン済みセクション -->
+        <div id="user-logged-in-section" style="display: none; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
           <div>
             <p id="user-display-name" style="font-weight: 600; color: var(--color-text);">-</p>
             <p id="user-display-email" style="color: var(--color-muted); font-size: 0.8rem; word-break: break-all;"></p>
           </div>
           <button class="btn-danger" id="logout-btn" style="width: auto; padding: 10px 20px;">
             ログアウト
+          </button>
+        </div>
+
+        <!-- ゲスト（ログインなし）セクション -->
+        <div id="user-guest-section" style="display: none; flex-direction: column; gap: 12px;">
+          <p style="font-size: 0.85rem; color: var(--color-muted); line-height: 1.6;">
+            現在ゲストモードで利用しています。データのクラウドバックアップ、他デバイスとのデータ同期、お気に入り保存、自動判定辞書の編集を行うにはGoogleアカウントでのログインが必要です。
+          </p>
+          <button class="btn-primary" id="settings-login-btn" style="box-shadow: none; padding: 10px 16px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
+            Googleアカウントでログイン
           </button>
         </div>
       </section>
@@ -1001,13 +1114,19 @@
 
     <!-- ================= MODAL OVERLAYS ================= -->
     
-    <!-- Explicit User-Triggered Login Modal -->
+    <!-- User Login Modal (Bypassable for guest usage, triggered on restricted features) -->
     <div class="modal-overlay" id="modal-login">
       <div class="modal-content" style="text-align: center; padding: 32px 24px;">
-        <h3 class="modal-header" style="font-size: 1.4rem; margin-bottom: 8px; font-weight: 400; letter-spacing: 0.05em;">文学ノート</h3>
-        <p class="modal-description" style="margin-bottom: 24px;">本アプリを利用するには、Googleアカウントでのログインが必要です。</p>
-        <button class="btn-primary" id="login-btn" style="box-shadow: var(--shadow-sm);">
+        <h3 class="modal-header" style="font-size: 1.4rem; margin-bottom: 8px; font-weight: 400; letter-spacing: 0.05em;">クラウド同期ログイン</h3>
+        <p class="modal-description" id="login-modal-desc-detail" style="margin-bottom: 24px; line-height: 1.6;">
+          Googleアカウントでログインすると、お気に入り登録、一文の永続的な保存、自動判定辞書のカスタムなど、すべての機能が安全にクラウド上で利用できるようになります。
+        </p>
+        <button class="btn-primary" id="login-btn" style="box-shadow: var(--shadow-sm); margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
           Googleアカウントでログイン
+        </button>
+        <button class="btn-secondary" id="guest-btn" style="width: 100%; font-weight: 600;">
+          ログインせずに利用を続ける
         </button>
       </div>
     </div>
@@ -1057,7 +1176,6 @@
       appId: "1:1003214272180:web:3b023e15a18b6ee77ac9e1"
     };
 
-    // オーナーアカウントUID制限を残しつつ、ログインした全てのユーザーが「自分のデータ」をパーソナルに保持・編集できるように設計を最適化
     const OWNER_UID = "ZF7sLJ9YL5fVtpbSr0tPETL8Shc2";
 
     firebase.initializeApp(firebaseConfig);
@@ -1088,7 +1206,59 @@
       '説明': ['つまり', '例えば', '要するに', '解説', '説明']
     };
 
-    // --- Database Wrapper Class (Cloud Firestore) ---
+    // ゲスト用初期サンプルデータ
+    const GUEST_SAMPLE_SENTENCES = [
+      {
+        id: 'sample_1',
+        text: '吾輩は猫である。',
+        source: '夏目漱石『吾輩は猫である』(サンプル)',
+        categories: ['その他'],
+        favorite: false,
+        createdAt: Date.now() - 5000
+      },
+      {
+        id: 'sample_2',
+        text: '名前はまだ無い。',
+        source: '夏目漱石『吾輩は猫である』(サンプル)',
+        categories: ['説明'],
+        favorite: false,
+        createdAt: Date.now() - 4000
+      },
+      {
+        id: 'sample_3',
+        text: 'どこで生れたかとんと見当がつかぬ。',
+        source: '夏目漱石『吾輩は猫である』(サンプル)',
+        categories: ['驚く'],
+        favorite: false,
+        createdAt: Date.now() - 3000
+      },
+      {
+        id: 'sample_4',
+        text: '何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している。',
+        source: '夏目漱石『吾輩は猫である』(サンプル)',
+        categories: ['泣く'],
+        favorite: false,
+        createdAt: Date.now() - 2000
+      },
+      {
+        id: 'sample_5',
+        text: 'メロスは激怒した。',
+        source: '太宰治『走れメロス』(サンプル)',
+        categories: ['怒る'],
+        favorite: false,
+        createdAt: Date.now() - 1000
+      },
+      {
+        id: 'sample_6',
+        text: '必ず、かの邪智暴虐の王を除かなければならぬと決意した。',
+        source: '太宰治『走れメロス』(サンプル)',
+        categories: ['戦闘'],
+        favorite: false,
+        createdAt: Date.now()
+      }
+    ];
+
+    // --- Database Wrapper Class (Cloud Firestore & In-Memory Hybrid) ---
     class LibraryDatabase {
       constructor() {
         this.firestore = db;
@@ -1098,9 +1268,10 @@
         return Promise.resolve();
       }
 
-      // 辞書の初期シードデータを投入（ログインユーザー別に空判定して投入するように修正）
+      // 辞書の初期シードデータを投入（ログインユーザーのみFirestoreへ登録）
       async seedDictionary(ownerUid) {
         if (!ownerUid) return;
+
         const snapshot = await this.firestore.collection('dictionary')
           .where('ownerUid', '==', ownerUid)
           .limit(1).get();
@@ -1116,28 +1287,40 @@
         await batch.commit();
       }
 
-      // ログインユーザー自身の自動判定ワードのみを取得するように修正
+      // 辞書の取得
       async getDictionary(ownerUid) {
-        if (!ownerUid) return [];
+        if (!ownerUid) {
+          // ゲスト時はシード用初期データから動的マッピング
+          const dict = [];
+          for (const [category, words] of Object.entries(INITIAL_DICTIONARY)) {
+            for (const word of words) {
+              dict.push({ id: 'g_dict_' + Math.random().toString(36).substr(2, 9), category, word, ownerUid: 'guest' });
+            }
+          }
+          return dict;
+        }
         const snapshot = await this.firestore.collection('dictionary')
           .where('ownerUid', '==', ownerUid)
           .get();
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       }
 
-      // 辞書への追加
+      // 辞書への追加（ログイン時のみ実行可能）
       async addDictionaryWord(category, word, ownerUid) {
+        if (!ownerUid) return null;
         const docRef = await this.firestore.collection('dictionary').add({ category, word, ownerUid });
         return docRef.id;
       }
 
       // 辞書の削除
       async removeDictionaryWord(id) {
+        if (id && id.startsWith('g_dict_')) return;
         await this.firestore.collection('dictionary').doc(id).delete();
       }
 
-      // 分割された文章の一括追加
+      // クラウド保存用の一括追加
       async addSentences(sentencesBatch, ownerUid) {
+        if (!ownerUid) return; // ゲスト時は処理をスキップ
         const batch = this.firestore.batch();
         sentencesBatch.forEach(item => {
           const docRef = this.firestore.collection('sentences').doc();
@@ -1153,7 +1336,7 @@
         await batch.commit();
       }
 
-      // 自分自身（ログイン中ユーザー）の文章のみをFirestoreから取得（セキュリティ・プライバシー最適化）
+      // 文章の取得（ログイン時のみDB問い合わせ）
       async getAllSentences(ownerUid) {
         if (!ownerUid) return [];
         const snapshot = await this.firestore.collection('sentences')
@@ -1161,24 +1344,17 @@
           .get();
         return snapshot.docs.map(doc => {
           const data = doc.data();
-          // 後方互換性：既存の isFavorite も favorite フィールドへ相互変換
           const favorite = (data.favorite !== undefined) ? data.favorite : (data.isFavorite || false);
           return { id: doc.id, ...data, favorite };
         });
       }
 
-      // カテゴリを指定したクエリ（Firestoreフィルタ用、クライアント側フィルタと併用可能）
-      async getSentencesByCategory(ownerUid, category) {
-        if (!ownerUid) return [];
-        const snapshot = await this.firestore.collection('sentences')
-          .where('ownerUid', '==', ownerUid)
-          .where('categories', 'array-contains', category)
-          .get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      }
-
       // 単一ドキュメント更新
       async updateSentence(id, updateData) {
+        if (id && (id.startsWith('g_sent_') || id.startsWith('sample_'))) {
+          // ゲスト用一時カードはFirestore連携しない
+          return;
+        }
         await this.firestore.collection('sentences').doc(id).update(updateData);
       }
     }
@@ -1190,18 +1366,19 @@
       currentTab: 'view-home',
       fontSizeClass: 'size-medium',
       deduplicateEnabled: true,
-      autocompleteEnabled: true, // 入力候補表示ON/OFFステート
+      autocompleteEnabled: true,
       
       currentUser: null,
+      guestMode: true,
       isOwner: false,
-      allKnownCategories: [...DEFAULT_CATEGORIES], // 自由追加されたものを含む動的カテゴリ
-      selectedRegisterCategories: new Set(), // 登録時に選択されている複数カテゴリ
+      allKnownCategories: [...DEFAULT_CATEGORIES],
+      selectedRegisterCategories: new Set(),
 
       limitHome: 30,
       limitFav: 30,
       limitCat: 30,
       
-      selectedCategoryFilter: null, // カテゴリ一覧で選択中のカテゴリ
+      selectedCategoryFilter: null,
 
       pendingFavAction: null,
       pendingLearnAction: null,
@@ -1221,7 +1398,7 @@
         document.getElementById('dedup-chk').checked = savedDedup;
         document.getElementById('dedup-chk-setting').checked = savedDedup;
 
-        // ④ 入力候補ON/OFF設定の復元
+        // 入力補助ON/OFF設定の復元
         const savedAutocomplete = localStorage.getItem('autocomplete') !== 'false';
         this.autocompleteEnabled = savedAutocomplete;
         document.getElementById('autocomplete-toggle-chk').checked = savedAutocomplete;
@@ -1236,11 +1413,37 @@
       setupAuth() {
         auth.onAuthStateChanged(async (user) => {
           const loginModal = document.getElementById('modal-login');
+          const headerLogoutBtn = document.getElementById('header-logout-btn');
+          const headerLoginBtn = document.getElementById('header-login-btn');
+          const statusArea = document.getElementById('auth-status-area');
+          
+          const homeGuestBanner = document.getElementById('home-guest-banner');
+          const favGuestPrompt = document.getElementById('fav-guest-prompt');
+          const dictGuestOverlay = document.getElementById('dict-guest-overlay');
+          const favFilterSec = document.getElementById('fav-filter-section');
+
+          const splitBtn = document.getElementById('split-btn');
+          const aozoraLoadBtn = document.getElementById('aozora-load-btn');
+          
           if (user) {
+            // --- ログイン中 ---
             this.currentUser = user;
+            this.guestMode = false;
             this.isOwner = (user.uid === OWNER_UID);
             
             if (loginModal) loginModal.classList.remove('active');
+            if (headerLogoutBtn) headerLogoutBtn.style.display = 'block';
+            if (headerLoginBtn) headerLoginBtn.style.display = 'none';
+
+            // バナー・制限プレースホルダーUIの制御
+            if (homeGuestBanner) homeGuestBanner.style.display = 'none';
+            if (favGuestPrompt) favGuestPrompt.style.display = 'none';
+            if (favFilterSec) favFilterSec.style.display = 'grid';
+            if (dictGuestOverlay) dictGuestOverlay.style.display = 'none';
+
+            // アカウント管理セクションの表示切り替え
+            document.getElementById('user-logged-in-section').style.display = 'flex';
+            document.getElementById('user-guest-section').style.display = 'none';
 
             // ユーザー情報の表示更新
             const nameEl = document.getElementById('user-display-name');
@@ -1248,67 +1451,119 @@
             if (nameEl) nameEl.textContent = user.displayName || 'ユーザー';
             if (emailEl) emailEl.textContent = user.email || '';
 
-            // ログイン済みユーザーに対して機能をフル有効化
-            this.enableUserControls();
+            // ボタン表示の切り替え
+            if (splitBtn) splitBtn.textContent = "文章ノートに登録する（クラウド保存）";
+            if (aozoraLoadBtn) aozoraLoadBtn.textContent = "読み込みを開始する（クラウド保存）";
 
-            // ログインユーザー用辞書のデフォルトシード
+            // ステータスバッジ
+            if (statusArea) {
+              statusArea.innerHTML = `
+                <span class="status-badge logged-in">
+                  <span style="display:inline-block; width:6px; height:6px; background:#2bc460; border-radius:50%;"></span>
+                  クラウド同期中: ${this.escapeHtml(user.displayName || 'ユーザー')}
+                </span>
+              `;
+            }
+
+            this.enableUserControls();
             await this.db.seedDictionary(this.currentUser.uid);
-            
-            // データの読み込み
             await this.reloadData();
           } else {
+            // --- 未ログイン（ゲストモード・制限付き） ---
             this.currentUser = null;
             this.isOwner = false;
-            if (loginModal) loginModal.classList.add('active');
+            this.guestMode = true;
 
-            // 未ログイン状態のコントロール無効化
-            this.disableUserControls();
+            if (loginModal) loginModal.classList.remove('active');
+            if (headerLogoutBtn) headerLogoutBtn.style.display = 'none';
+            if (headerLoginBtn) headerLoginBtn.style.display = 'flex';
 
-            // 表示情報のクリア
-            const nameEl = document.getElementById('user-display-name');
-            const emailEl = document.getElementById('user-display-email');
-            if (nameEl) nameEl.textContent = '-';
-            if (emailEl) emailEl.textContent = '';
+            // ゲスト限定バナーやロックメッセージの表示
+            if (homeGuestBanner) homeGuestBanner.style.display = 'flex';
+            if (favGuestPrompt) favGuestPrompt.style.display = 'block';
+            if (favFilterSec) favFilterSec.style.display = 'none';
+            if (dictGuestOverlay) dictGuestOverlay.style.display = 'flex';
+
+            document.getElementById('user-logged-in-section').style.display = 'none';
+            document.getElementById('user-guest-section').style.display = 'flex';
+
+            // ボタン表示の切り替え
+            if (splitBtn) splitBtn.textContent = "一時的に分割・表示する（保存なし）";
+            if (aozoraLoadBtn) aozoraLoadBtn.textContent = "一時的に読み込んで表示する（保存なし）";
+
+            // ステータスバッジ
+            if (statusArea) {
+              statusArea.innerHTML = `
+                <span class="status-badge guest">
+                  <span style="display:inline-block; width:6px; height:6px; background:#ff5c5c; border-radius:50%;"></span>
+                  ゲストモード（制限付き）
+                </span>
+              `;
+            }
+
+            this.enableUserControls();
+
+            // 初期データ（メモリ上）にプリセットを投入
+            this.loadedSentences = [...GUEST_SAMPLE_SENTENCES];
+            await this.reloadData();
           }
         });
 
-        // ログインボタン処理
+        // 共通ログイン処理
+        const handleLoginAction = () => {
+          auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
+            .then(() => {
+              this.showToast("ログインしました。");
+            })
+            .catch(err => {
+              console.error("ログインエラー:", err);
+              if (err.code === 'auth/popup-blocked') {
+                this.showToast("ポップアップがブロックされました。ブラウザの設定を変更してください。", "warning");
+              } else {
+                this.showToast("ログインに失敗しました。", "warning");
+              }
+            });
+        };
+
         const loginBtn = document.getElementById('login-btn');
-        if (loginBtn) {
-          loginBtn.addEventListener('click', () => {
-            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())
-              .then(() => {
-                this.showToast("ログインしました。");
-              })
-              .catch(err => {
-                console.error("ログインエラー:", err);
-                if (err.code === 'auth/popup-blocked') {
-                  this.showToast("ポップアップがブロックされました。ブラウザのポップアップを許可してください。", "warning");
-                } else {
-                  this.showToast("ログインに失敗しました。", "warning");
-                }
-              });
+        if (loginBtn) loginBtn.addEventListener('click', handleLoginAction);
+
+        const settingsLoginBtn = document.getElementById('settings-login-btn');
+        if (settingsLoginBtn) settingsLoginBtn.addEventListener('click', handleLoginAction);
+
+        const headerLoginBtn = document.getElementById('header-login-btn');
+        if (headerLoginBtn) headerLoginBtn.addEventListener('click', handleLoginAction);
+
+        // ゲストモード継続
+        const guestBtn = document.getElementById('guest-btn');
+        if (guestBtn) {
+          guestBtn.addEventListener('click', () => {
+            const loginModal = document.getElementById('modal-login');
+            if (loginModal) loginModal.classList.remove('active');
+            this.showToast("ゲストモードのまま利用を継続します。");
           });
         }
 
-        // ログアウトボタン処理
+        // ログアウト処理
+        const performLogout = () => {
+          auth.signOut()
+            .then(() => {
+              this.showToast("ログアウトしました。ゲストモードへ移行します。");
+              this.switchView('view-home');
+            })
+            .catch(err => {
+              console.error("ログアウトエラー:", err);
+              this.showToast("ログアウトに失敗しました。", "warning");
+            });
+        };
+
         const logoutBtn = document.getElementById('logout-btn');
-        if (logoutBtn) {
-          logoutBtn.addEventListener('click', () => {
-            auth.signOut()
-              .then(() => {
-                this.showToast("ログアウトしました。");
-                this.switchView('view-home'); // ホームビューに切り替える
-              })
-              .catch(err => {
-                console.error("ログアウトエラー:", err);
-                this.showToast("ログアウトに失敗しました。", "warning");
-              });
-          });
-        }
+        if (logoutBtn) logoutBtn.addEventListener('click', performLogout);
+
+        const headerLogoutBtn = document.getElementById('header-logout-btn');
+        if (headerLogoutBtn) headerLogoutBtn.addEventListener('click', performLogout);
       },
 
-      // 一般ログインユーザーでも追加、編集、青空文庫読み込みができるように操作制限を最適化
       enableUserControls() {
         const elements = [
           'text-input', 'split-btn', 'new-keyword-input', 'add-keyword-btn',
@@ -1320,7 +1575,6 @@
         });
       },
 
-      // ログアウト・未ログイン時にコントロール入力を無効化
       disableUserControls() {
         const elements = [
           'text-input', 'split-btn', 'new-keyword-input', 'add-keyword-btn',
@@ -1333,11 +1587,21 @@
       },
 
       async reloadData() {
-        if (!this.currentUser) return;
-        this.loadedSentences = await this.db.getAllSentences(this.currentUser.uid);
+        const uid = this.currentUser ? this.currentUser.uid : null;
+        
+        if (this.currentUser) {
+          // ログイン時はDBからロード
+          this.loadedSentences = await this.db.getAllSentences(uid);
+        } else {
+          // ゲスト時はメモリ上の既存状態を使用（未定義時はサンプル）
+          if (!this.loadedSentences || this.loadedSentences.length === 0) {
+            this.loadedSentences = [...GUEST_SAMPLE_SENTENCES];
+          }
+        }
+        
         this.loadedSentences.sort((a, b) => b.createdAt - a.createdAt);
 
-        // 文章に存在するカスタムカテゴリも抽出して動的カテゴリリストを統合
+        // 動的なカテゴリーの一括統合
         const customCategories = new Set(DEFAULT_CATEGORIES);
         this.loadedSentences.forEach(s => {
           if (s.categories && Array.isArray(s.categories)) {
@@ -1395,7 +1659,7 @@
         document.getElementById('dedup-chk').addEventListener('change', toggleDeduplication);
         document.getElementById('dedup-chk-setting').addEventListener('change', toggleDeduplication);
 
-        // ④ 入力補助トグル
+        // 入力補助トグル
         document.getElementById('autocomplete-toggle-chk').addEventListener('change', (e) => {
           this.autocompleteEnabled = e.target.checked;
           localStorage.setItem('autocomplete', this.autocompleteEnabled ? 'true' : 'false');
@@ -1427,17 +1691,16 @@
           this.renderCategoryViewList();
         });
 
-        // ④ 入力候補（前方一致）の監視
+        // 入力候補（前方一致）の監視
         const textInput = document.getElementById('text-input');
         textInput.addEventListener('input', (e) => {
           this.handleAutocompleteSearch(e.target.value);
         });
         textInput.addEventListener('blur', () => {
-          // 遅延させてクリックイベントが先行するようにする
           setTimeout(() => this.hideAutocomplete(), 200);
         });
 
-        // ② カテゴリ新規作成ボタン
+        // カテゴリ新規作成ボタン
         document.getElementById('add-category-tag-btn').addEventListener('click', () => {
           this.handleAddNewRegisterCategory();
         });
@@ -1498,7 +1761,7 @@
         dictCatSelector.innerHTML = listOptions;
       },
 
-      // ② 新規追加用のカテゴリチップリストを描画（トグル可能）
+      // 新規追加用のカテゴリチップリストを描画
       renderRegisterCategoryChips() {
         const container = document.getElementById('register-category-chips');
         if (!container) return;
@@ -1522,7 +1785,7 @@
         this.renderRegisterCategoryChips();
       },
 
-      // ② 自由入力から新しいカテゴリを動的追加
+      // 自由入力から新しいカテゴリを動的追加
       handleAddNewRegisterCategory() {
         const input = document.getElementById('new-category-tag-input');
         const newCat = input.value.trim();
@@ -1549,6 +1812,16 @@
         }, 2500);
       },
 
+      // ログインモーダルの表示
+      showLoginPrompt(message) {
+        const modal = document.getElementById('modal-login');
+        const descDetail = document.getElementById('login-modal-desc-detail');
+        if (descDetail) {
+          descDetail.innerHTML = `<strong>${this.escapeHtml(message)}</strong><br><br>Googleアカウントでログインすると、お気に入り保存、文章の永続的な保存、自動判定辞書のカスタムなどすべての機能がクラウド上でご利用いただけます。`;
+        }
+        modal.classList.add('active');
+      },
+
       normalizeText(text) {
         if (!text) return '';
         return text
@@ -1559,7 +1832,7 @@
           .trim();
       },
 
-      // ④ 前方一致での入力候補サジェスト機能
+      // 前方一致での入力候補サジェスト機能
       handleAutocompleteSearch(val) {
         if (!this.autocompleteEnabled || !val.trim()) {
           this.hideAutocomplete();
@@ -1567,7 +1840,6 @@
         }
 
         const normalizedVal = val.trim().toLowerCase();
-        // 重複排除しながら前方一致の文章を検索
         const matches = [];
         const seen = new Set();
         
@@ -1578,7 +1850,7 @@
               matches.push(item.text);
             }
           }
-          if (matches.length >= 5) break; // 最大5件制限
+          if (matches.length >= 5) break;
         }
 
         if (matches.length === 0) {
@@ -1614,7 +1886,7 @@
         this.showToast("候補から文章を自動補完しました。");
       },
 
-      // ① 青空文庫URLからのテキスト取得とパース
+      // 青空文庫URLからのテキスト取得とパース
       async handleAozoraImport() {
         const urlInput = document.getElementById('aozora-url-input');
         const url = urlInput.value.trim();
@@ -1626,7 +1898,6 @@
         this.showToast("青空文庫からデータを取得しています...", "success");
         
         try {
-          // CORS制限回避プロキシ経由
           const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
           const response = await fetch(proxyUrl);
           if (!response.ok) throw new Error("CORSプロキシ経由のロードに失敗しました。");
@@ -1637,13 +1908,11 @@
             return;
           }
 
-          // HTMLタグやルビの除去処理
-          text = text.replace(/<[^>]+>/g, ''); // シンプルなHTMLタグ除去
-          text = text.replace(/《[^》]+》/g, ''); // ルビの除去
-          text = text.replace(/［＃[^］]+］/g, ''); // 注記の除去
-          text = text.replace(/｜/g, ''); // ルビ開始記号の除去
+          text = text.replace(/<[^>]+>/g, '');
+          text = text.replace(/《[^》]+》/g, '');
+          text = text.replace(/［＃[^］]+］/g, '');
+          text = text.replace(/｜/g, '');
 
-          // 「。！？および改行（\n）」を対象に精密分割
           const delimiterRegex = /[^。！？\n\r]+[。！？\n\r]*/g;
           const rawSegments = text.match(delimiterRegex) || [];
           
@@ -1652,16 +1921,17 @@
           const selectedCats = Array.from(this.selectedRegisterCategories);
           const finalCats = selectedCats.length > 0 ? selectedCats : ['その他'];
 
-          rawSegments.forEach(segment => {
+          rawSegments.forEach((segment, idx) => {
             const normalized = this.normalizeText(segment);
-            if (!normalized || normalized.length < 3) return; // あまりに短いノイズは除外
+            if (!normalized || normalized.length < 3) return;
 
             preparedItems.push({
+              id: this.currentUser ? '' : `g_sent_aozora_${now}_${idx}`,
               text: normalized,
-              source: `青空文庫: ${url.substring(0, 30)}...`,
+              source: `青空文庫: ${url.substring(0, 20)}...`,
               categories: finalCats,
               favorite: false,
-              createdAt: now
+              createdAt: now - idx
             });
           });
 
@@ -1670,10 +1940,18 @@
             return;
           }
 
-          // データベースへバッチ流し込み
-          await this.db.addSentences(preparedItems, this.currentUser.uid);
+          if (this.currentUser) {
+            // クラウドに直接保存
+            const uid = this.currentUser.uid;
+            await this.db.addSentences(preparedItems, uid);
+            this.showToast(`${preparedItems.length}件の文を読み込み、クラウドに保存しました。`);
+          } else {
+            // ゲスト時はインメモリ配列へマージ
+            this.loadedSentences = [...preparedItems, ...this.loadedSentences];
+            this.showToast(`${preparedItems.length}件の文を一時的に読み込みました。リロードするとリセットされます。`);
+          }
+          
           urlInput.value = '';
-          this.showToast(`${preparedItems.length}件の文を青空文庫から読み込みました。`);
           await this.reloadData();
 
         } catch (error) {
@@ -1683,8 +1961,6 @@
       },
 
       async handleTextSplit() {
-        if (!this.currentUser) return;
-
         const textInput = document.getElementById('text-input').value;
         if (!textInput.trim()) {
           this.showToast('文章を入力してください。', 'warning');
@@ -1717,18 +1993,15 @@
         }
         
         const preparedItems = [];
-        // getDictionaryをログインユーザー自身のIDで絞り込むように修正
-        const dictionary = await this.db.getDictionary(this.currentUser.uid);
+        const uid = this.currentUser ? this.currentUser.uid : null;
+        const dictionary = await this.db.getDictionary(uid);
         const now = Date.now();
-
-        // 選択されたカテゴリ
         const selectedCats = Array.from(this.selectedRegisterCategories);
 
-        rawSegments.forEach(segment => {
+        rawSegments.forEach((segment, idx) => {
           const normalized = this.normalizeText(segment);
           if (!normalized) return;
 
-          // 自動カテゴリ辞書でのマッチング
           const detectedCategories = new Set(selectedCats);
           dictionary.forEach(entry => {
             if (normalized.includes(entry.word)) {
@@ -1741,11 +2014,12 @@
           }
 
           preparedItems.push({
+            id: this.currentUser ? '' : `g_sent_${now}_${idx}`, // ゲスト用一時ID
             text: normalized,
-            source: '直接入力',
+            source: this.currentUser ? '直接入力' : '直接入力（一時）',
             categories: Array.from(detectedCategories),
             favorite: false,
-            createdAt: now
+            createdAt: now - idx
           });
         });
 
@@ -1754,11 +2028,19 @@
           return;
         }
 
-        await this.db.addSentences(preparedItems, this.currentUser.uid);
+        if (this.currentUser) {
+          // ログイン中ならFirestoreへ保存
+          await this.db.addSentences(preparedItems, uid);
+          this.showToast(`${preparedItems.length}件の文を登録し、クラウドに保存しました。`);
+        } else {
+          // ゲスト時はメモリ上の先頭に一時マージ
+          this.loadedSentences = [...preparedItems, ...this.loadedSentences];
+          this.showToast(`${preparedItems.length}件の文を一時追加しました。リロードするとリセットされます。`);
+        }
+        
         document.getElementById('text-input').value = '';
         this.selectedRegisterCategories.clear();
         this.renderRegisterCategoryChips();
-        this.showToast(`${preparedItems.length}件の文を登録しました。`);
         
         await this.reloadData();
       },
@@ -1812,9 +2094,19 @@
         listEl.innerHTML = subset.map(item => this.compileCardHTML(item)).join('');
       },
 
-      // ③ お気に入り一覧表示
       renderFavList() {
         const listEl = document.getElementById('list-favorites');
+        const favGuestPrompt = document.getElementById('fav-guest-prompt');
+
+        // 未ログイン時はプレースホルダーとプロンプトを表示
+        if (!this.currentUser) {
+          listEl.innerHTML = '';
+          if (favGuestPrompt) favGuestPrompt.style.display = 'block';
+          return;
+        }
+
+        if (favGuestPrompt) favGuestPrompt.style.display = 'none';
+
         const query = document.getElementById('search-fav').value.toLowerCase().trim();
 
         const filtered = this.loadedSentences.filter(item => {
@@ -1833,12 +2125,10 @@
         listEl.innerHTML = subset.map(item => this.compileCardHTML(item)).join('');
       },
 
-      // ② カテゴリ一覧ページ（サマリー表示）
       renderCategorySummary() {
         const container = document.getElementById('category-summary-container');
         if (!container) return;
 
-        // 各カテゴリのカウントを算出
         const categoryCounts = {};
         this.allKnownCategories.forEach(c => categoryCounts[c] = 0);
         
@@ -1864,7 +2154,7 @@
 
       selectCategoryFilter(category) {
         if (this.selectedCategoryFilter === category) {
-          this.selectedCategoryFilter = null; // トグル解除
+          this.selectedCategoryFilter = null;
         } else {
           this.selectedCategoryFilter = category;
         }
@@ -1899,10 +2189,16 @@
         listEl.innerHTML = subset.map(item => this.compileCardHTML(item)).join('');
       },
 
-      // 文カード描画（文学的な美しさを重視したデザイン）
       compileCardHTML(item) {
         const isFavClass = item.favorite ? 'active' : '';
-        const tagsHTML = item.categories.map(cat => `<span class="category-tag">${this.escapeHtml(cat)}</span>`).join('');
+        const isGuestCard = !this.currentUser && (item.id.startsWith('g_sent_') || item.id.startsWith('sample_'));
+        
+        // ゲスト用の一時データのバッジ
+        const temporaryBadge = isGuestCard 
+          ? `<span class="category-tag" style="background:#fff0f0; color:#ff5c5c; border-color:#ffe0e0;">一時保存</span>` 
+          : '';
+
+        const tagsHTML = temporaryBadge + item.categories.map(cat => `<span class="category-tag">${this.escapeHtml(cat)}</span>`).join('');
         const formattedDate = new Date(item.createdAt).toLocaleDateString('ja-JP', {
           year: 'numeric', month: '2-digit', day: '2-digit'
         });
@@ -1911,7 +2207,6 @@
           ? `<div class="count-badge">出現：${item.displayCount}回</div>` 
           : '';
 
-        // カテゴリのインライン変更
         const chipsHTML = this.allKnownCategories.map(cat => {
           const isChecked = item.categories.includes(cat) ? 'checked' : '';
           return `
@@ -1927,338 +2222,3 @@
             <button class="fav-toggle-btn ${isFavClass}" onclick="App.handleFavToggle('${item.id}')" aria-label="お気に入り登録">
               <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
             </button>
-            <p class="sentence-text ${this.fontSizeClass}">${this.escapeHtml(item.text)}</p>
-            
-            ${countBadgeHTML}
-            
-            <div class="tags-list" id="card-tags-${item.id}">
-              ${tagsHTML}
-            </div>
-            <div class="card-footer-actions">
-              <span class="card-date">${formattedDate} &middot; ${this.escapeHtml(item.source || '直接入力')}</span>
-              <button class="edit-tag-btn" onclick="App.toggleInlinePanel('${item.id}')">
-                カテゴリ編集
-              </button>
-            </div>
-            
-            <div class="inline-edit-panel" id="edit-panel-${item.id}">
-              <div class="edit-dropdown-grid">
-                ${chipsHTML}
-              </div>
-              <div class="inline-add-cat-row">
-                <input type="text" placeholder="新規カテゴリ名を入力して追加..." onkeydown="if(event.key==='Enter') App.addInlineCategory(event, '${item.id}')">
-              </div>
-            </div>
-          </div>
-        `;
-      },
-
-      getEmptyStateMarkup(msg = "文章が見つかりませんでした。") {
-        return `
-          <div class="empty-placeholder">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-            <p>${msg}</p>
-          </div>
-        `;
-      },
-
-      loadMoreHome() {
-        if (this.limitHome < this.loadedSentences.length) {
-          this.limitHome += 30;
-          this.renderHomeList();
-        }
-      },
-
-      loadMoreFav() {
-        const favCount = this.loadedSentences.filter(i => i.favorite).length;
-        if (this.limitFav < favCount) {
-          this.limitFav += 30;
-          this.renderFavList();
-        }
-      },
-
-      toggleInlinePanel(id) {
-        const panel = document.getElementById(`edit-panel-${id}`);
-        if (panel) {
-          panel.classList.toggle('active');
-        }
-      },
-
-      // ③ お気に入りトグル処理 (favorite boolean化)
-      async handleFavToggle(id) {
-        const item = this.loadedSentences.find(s => s.id === id);
-        if (!item) return;
-
-        if (item.favorite) {
-          this.pendingFavAction = item;
-          document.getElementById('modal-remove-fav').classList.add('active');
-        } else {
-          const targetText = item.text;
-          const batch = this.db.firestore.batch();
-
-          this.loadedSentences.forEach(s => {
-            if (s.text === targetText) {
-              s.favorite = true;
-              const docRef = this.db.firestore.collection('sentences').doc(s.id);
-              batch.update(docRef, { favorite: true });
-            }
-          });
-
-          await batch.commit();
-          this.showToast('お気に入りに追加しました。');
-          this.renderHomeList();
-          this.renderFavList();
-          this.renderCategoryViewList();
-        }
-      },
-
-      async closeFavModal(shouldRemove) {
-        document.getElementById('modal-remove-fav').classList.remove('active');
-        if (shouldRemove && this.pendingFavAction) {
-          const targetText = this.pendingFavAction.text;
-          const batch = this.db.firestore.batch();
-
-          this.loadedSentences.forEach(s => {
-            if (s.text === targetText) {
-              s.favorite = false;
-              const docRef = this.db.firestore.collection('sentences').doc(s.id);
-              batch.update(docRef, { favorite: false });
-            }
-          });
-
-          await batch.commit();
-          this.showToast('お気に入りから削除しました。');
-          this.renderHomeList();
-          this.renderFavList();
-          this.renderCategoryViewList();
-        }
-        this.pendingFavAction = null;
-      },
-
-      // ② カテゴリのインライン変更
-      async handleInlineCategoryChange(event, sentenceId) {
-        const item = this.loadedSentences.find(s => s.id === sentenceId);
-        if (!item) return;
-
-        const checkbox = event.target;
-        const categoryChanged = checkbox.getAttribute('data-cat');
-        const isChecked = checkbox.checked;
-
-        const previousCategories = [...item.categories];
-        let nextCategories = [];
-
-        if (isChecked) {
-          nextCategories = [...previousCategories, categoryChanged];
-          if (categoryChanged !== 'その他') {
-            nextCategories = nextCategories.filter(c => c !== 'その他');
-          }
-        } else {
-          nextCategories = previousCategories.filter(c => c !== categoryChanged);
-          if (nextCategories.length === 0) {
-            nextCategories.push('その他');
-          }
-        }
-
-        item.categories = nextCategories;
-        await this.db.updateSentence(item.id, { categories: nextCategories });
-
-        const tagsContainer = document.getElementById(`card-tags-${sentenceId}`);
-        if (tagsContainer) {
-          tagsContainer.innerHTML = item.categories.map(cat => `<span class="category-tag">${this.escapeHtml(cat)}</span>`).join('');
-        }
-
-        // 同一文章のカテゴリ同期
-        const targetText = item.text;
-        const batch = this.db.firestore.batch();
-        this.loadedSentences.forEach(s => {
-          if (s.text === targetText && s.id !== item.id) {
-            s.categories = [...item.categories];
-            const docRef = this.db.firestore.collection('sentences').doc(s.id);
-            batch.update(docRef, { categories: s.categories });
-          }
-        });
-        await batch.commit();
-
-        if (isChecked && categoryChanged !== 'その他') {
-          this.triggerAutoLearning(item.text, categoryChanged);
-        } else {
-          this.renderHomeList();
-          this.renderFavList();
-          this.renderCategorySummary();
-          this.renderCategoryViewList();
-        }
-      },
-
-      // インライン変更パネルから新しいカテゴリを追加する処理
-      async addInlineCategory(event, sentenceId) {
-        const input = event.target;
-        const value = input.value.trim();
-        if (!value) return;
-
-        if (!this.allKnownCategories.includes(value)) {
-          this.allKnownCategories.push(value);
-          this.populateDropdowns();
-          this.renderRegisterCategoryChips();
-          this.renderCategorySummary();
-        }
-
-        const item = this.loadedSentences.find(s => s.id === sentenceId);
-        if (item && !item.categories.includes(value)) {
-          item.categories.push(value);
-          if (item.categories.includes('その他')) {
-            item.categories = item.categories.filter(c => c !== 'その他');
-          }
-          await this.db.updateSentence(item.id, { categories: item.categories });
-          
-          // 同一文章の同期
-          const targetText = item.text;
-          const batch = this.db.firestore.batch();
-          this.loadedSentences.forEach(s => {
-            if (s.text === targetText) {
-              s.categories = [...item.categories];
-              const docRef = this.db.firestore.collection('sentences').doc(s.id);
-              batch.update(docRef, { categories: s.categories });
-            }
-          });
-          await batch.commit();
-        }
-
-        input.value = '';
-        this.renderHomeList();
-        this.renderFavList();
-        this.renderCategorySummary();
-        this.renderCategoryViewList();
-      },
-
-      triggerAutoLearning(sentenceText, newCategory) {
-        const modal = document.getElementById('modal-auto-learn');
-        const titleEl = document.getElementById('learning-modal-title');
-        const chipsContainer = document.getElementById('learning-word-chips');
-        const customInput = document.getElementById('learning-custom-word');
-
-        titleEl.textContent = `学習辞書への登録: 「${newCategory}」`;
-        customInput.value = '';
-        chipsContainer.innerHTML = '';
-
-        const candidates = this.parseDistinctCandidates(sentenceText);
-        if (candidates.length === 0) {
-          chipsContainer.innerHTML = '<span style="font-size:0.85rem;color:var(--color-muted);">抽出できる特徴語がありませんでした。</span>';
-        } else {
-          candidates.forEach(word => {
-            const chip = document.createElement('button');
-            chip.className = 'category-chip-interactive';
-            chip.textContent = word;
-            chip.onclick = () => chip.classList.toggle('selected');
-            chipsContainer.appendChild(chip);
-          });
-        }
-
-        this.pendingLearnAction = {
-          sentenceText,
-          category: newCategory
-        };
-
-        modal.classList.add('active');
-      },
-
-      parseDistinctCandidates(text) {
-        const noise = new Set([
-          'です', 'ます', 'いる', 'ある', 'した', 'れる', 'られる', 'せる', 'させる', 'ない',
-          'もの', 'こと', 'とき', 'これ', 'それ', 'あれ', 'から', 'まで', 'いく', 'くる', 'など'
-        ]);
-        
-        const pattern = /[一-龠]{2,}|[ァ-ヴ]{2,}|[ぁ-ん]{3,}/g;
-        const matches = text.match(pattern) || [];
-        
-        const finalCandidates = new Set();
-        matches.forEach(m => {
-          if (!noise.has(m) && m.length >= 2) {
-            finalCandidates.add(m);
-          }
-        });
-
-        return Array.from(finalCandidates);
-      },
-
-      async closeLearningModal(shouldLearn) {
-        const modal = document.getElementById('modal-auto-learn');
-        modal.classList.remove('active');
-
-        if (shouldLearn && this.pendingLearnAction && this.currentUser) {
-          const chipsContainer = document.getElementById('learning-word-chips');
-          const customWord = document.getElementById('learning-custom-word').value.trim();
-          
-          const selectedWords = Array.from(chipsContainer.querySelectorAll('.category-chip-interactive.selected'))
-            .map(chip => chip.textContent);
-
-          if (customWord) {
-            selectedWords.push(customWord);
-          }
-
-          if (selectedWords.length > 0) {
-            for (const word of selectedWords) {
-              await this.db.addDictionaryWord(this.pendingLearnAction.category, word, this.currentUser.uid);
-            }
-            this.showToast(`${selectedWords.length}件を「${this.pendingLearnAction.category}」として学習しました。`);
-            this.updateSettingDictList();
-          }
-        }
-        
-        this.pendingLearnAction = null;
-        this.renderHomeList();
-        this.renderFavList();
-        this.renderCategorySummary();
-        this.renderCategoryViewList();
-      },
-
-      async updateSettingDictList() {
-        const activeCategory = document.getElementById('dict-cat-selector').value;
-        const listWrapper = document.getElementById('dict-words-list');
-        if (!listWrapper) return;
-        
-        if (!this.currentUser) return;
-        const fullDict = await this.db.getDictionary(this.currentUser.uid);
-        const filtered = fullDict.filter(item => item.category === activeCategory);
-
-        if (filtered.length === 0) {
-          listWrapper.innerHTML = '<p style="text-align:center;padding:12px;font-size:0.85rem;color:var(--color-muted);">学習データはまだありません。</p>';
-          return;
-        }
-
-        listWrapper.innerHTML = filtered.map(item => `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-bottom: 1px solid var(--border-card);">
-            <span style="font-size: 0.85rem;">${this.escapeHtml(item.word)}</span>
-            <button style="background:none; border:none; color:#ff7e7e; cursor:pointer; font-size:0.8rem;" onclick="App.handleRemoveKeyword('${item.id}')">削除</button>
-          </div>
-        `).join('');
-      },
-
-      async handleAddKeyword() {
-        if (!this.currentUser) return;
-
-        const activeCategory = document.getElementById('dict-cat-selector').value;
-        const input = document.getElementById('new-keyword-input');
-        const word = input.value.trim();
-
-        if (!word) {
-          this.showToast('単語を入力してください。', 'warning');
-          return;
-        }
-
-        await this.db.addDictionaryWord(activeCategory, word, this.currentUser.uid);
-        input.value = '';
-        this.showToast(`「${activeCategory}」に「${word}」を追加しました。`);
-        this.updateSettingDictList();
-      },
-
-      async handleRemoveKeyword(id) {
-        await this.db.removeDictionaryWord(id);
-        this.showToast('単語を学習辞書から削除しました。');
-        this.updateSettingDictList();
-      },
-
-      escapeHtml(str) {
-        if (!str) return '';
-        return str
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "
