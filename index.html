@@ -1083,10 +1083,12 @@
         return Promise.resolve();
       }
 
-      // 辞書の初期シードデータを投入（管理者または初期設定用）
+      // 辞書の初期シードデータを投入（ログインユーザー別に空判定して投入するように修正）
       async seedDictionary(ownerUid) {
         if (!ownerUid) return;
-        const snapshot = await this.firestore.collection('dictionary').limit(1).get();
+        const snapshot = await this.firestore.collection('dictionary')
+          .where('ownerUid', '==', ownerUid)
+          .limit(1).get();
         if (!snapshot.empty) return;
 
         const batch = this.firestore.batch();
@@ -1099,9 +1101,12 @@
         await batch.commit();
       }
 
-      // 全ての自動判定ワードを取得
-      async getDictionary() {
-        const snapshot = await this.firestore.collection('dictionary').get();
+      // ログインユーザー自身の自動判定ワードのみを取得するように修正
+      async getDictionary(ownerUid) {
+        if (!ownerUid) return [];
+        const snapshot = await this.firestore.collection('dictionary')
+          .where('ownerUid', '==', ownerUid)
+          .get();
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       }
 
@@ -1225,7 +1230,7 @@
             // ログイン済みユーザーに対して機能をフル有効化
             this.enableUserControls();
 
-            // 辞書のデフォルトシード
+            // ログインユーザー用辞書のデフォルトシード
             await this.db.seedDictionary(this.currentUser.uid);
             
             // データの読み込み
@@ -1654,7 +1659,8 @@
         }
         
         const preparedItems = [];
-        const dictionary = await this.db.getDictionary();
+        // getDictionaryをログインユーザー自身のIDで絞り込むように修正
+        const dictionary = await this.db.getDictionary(this.currentUser.uid);
         const now = Date.now();
 
         // 選択されたカテゴリ
@@ -2152,7 +2158,8 @@
         const listWrapper = document.getElementById('dict-words-list');
         if (!listWrapper) return;
         
-        const fullDict = await this.db.getDictionary();
+        if (!this.currentUser) return;
+        const fullDict = await this.db.getDictionary(this.currentUser.uid);
         const filtered = fullDict.filter(item => item.category === activeCategory);
 
         if (filtered.length === 0) {
