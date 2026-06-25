@@ -979,6 +979,21 @@
         </div>
       </section>
 
+      <!-- Account Management (ログアウト) -->
+      <section class="glass-panel">
+        <h2 class="settings-group-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 8px;">アカウント</h2>
+        <p class="modal-description" style="margin-bottom: 16px;">現在ログイン中のアカウント情報を確認し、ログアウトできます。</p>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <div>
+            <p id="user-display-name" style="font-weight: 600; color: var(--color-text);">-</p>
+            <p id="user-display-email" style="color: var(--color-muted); font-size: 0.8rem; word-break: break-all;"></p>
+          </div>
+          <button class="btn-danger" id="logout-btn" style="width: auto; padding: 10px 20px;">
+            ログアウト
+          </button>
+        </div>
+      </section>
+
     </main>
 
     <!-- TOAST POPUP NOTIFICATION -->
@@ -1227,6 +1242,12 @@
             
             if (loginModal) loginModal.classList.remove('active');
 
+            // ユーザー情報の表示更新
+            const nameEl = document.getElementById('user-display-name');
+            const emailEl = document.getElementById('user-display-email');
+            if (nameEl) nameEl.textContent = user.displayName || 'ユーザー';
+            if (emailEl) emailEl.textContent = user.email || '';
+
             // ログイン済みユーザーに対して機能をフル有効化
             this.enableUserControls();
 
@@ -1239,6 +1260,15 @@
             this.currentUser = null;
             this.isOwner = false;
             if (loginModal) loginModal.classList.add('active');
+
+            // 未ログイン状態のコントロール無効化
+            this.disableUserControls();
+
+            // 表示情報のクリア
+            const nameEl = document.getElementById('user-display-name');
+            const emailEl = document.getElementById('user-display-email');
+            if (nameEl) nameEl.textContent = '-';
+            if (emailEl) emailEl.textContent = '';
           }
         });
 
@@ -1260,9 +1290,25 @@
               });
           });
         }
+
+        // ログアウトボタン処理
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', () => {
+            auth.signOut()
+              .then(() => {
+                this.showToast("ログアウトしました。");
+                this.switchView('view-home'); // ホームビューに切り替える
+              })
+              .catch(err => {
+                console.error("ログアウトエラー:", err);
+                this.showToast("ログアウトに失敗しました。", "warning");
+              });
+          });
+        }
       },
 
-      // 一般ログインユーザーでも文学ノートとしての追加、編集、青空文庫読み込みができるように操作制限を最適化
+      // 一般ログインユーザーでも追加、編集、青空文庫読み込みができるように操作制限を最適化
       enableUserControls() {
         const elements = [
           'text-input', 'split-btn', 'new-keyword-input', 'add-keyword-btn',
@@ -1271,6 +1317,18 @@
         elements.forEach(id => {
           const el = document.getElementById(id);
           if (el) el.disabled = false;
+        });
+      },
+
+      // ログアウト・未ログイン時にコントロール入力を無効化
+      disableUserControls() {
+        const elements = [
+          'text-input', 'split-btn', 'new-keyword-input', 'add-keyword-btn',
+          'aozora-url-input', 'aozora-load-btn'
+        ];
+        elements.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = true;
         });
       },
 
@@ -2203,16 +2261,4 @@
         if (!str) return '';
         return str
           .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#039;");
-      }
-    };
-
-    window.addEventListener('DOMContentLoaded', () => {
-      App.init();
-    });
-  </script>
-</body>
-</html>
+          .replace(/</g, "
